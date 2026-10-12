@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Contacts
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Sms
@@ -143,6 +144,7 @@ fun PeopleScreen(
         if (r.notWritten > 0) add("${r.notWritten} couldn't be edited")
     }.joinToString(" · ")
     var confirmSaveAll by remember { mutableStateOf(false) }
+    var addNumberFor by remember { mutableStateOf<Person?>(null) }
     val saveAllToContacts: () -> Unit = {
         withContacts(write = true) {
             scope.launch { snackbar.showSnackbar(contactWriteSummary(vm.writeBirthdaysToContacts())) }
@@ -183,6 +185,7 @@ fun PeopleScreen(
                     onMatch = { withContacts(action = findMatches) },
                     onSaveToContacts = { confirmSaveAll = true },
                     onStats = onStats,
+                    onAddNumber = { person -> withContacts { addNumberFor = person } },
                     onSettings = onSettings,
                 )
             }
@@ -223,6 +226,19 @@ fun PeopleScreen(
                         snackbar.showSnackbar("Linked ${linked.size} to contacts. Tap someone to choose SMS or Signal.")
                     }
                 }
+            },
+        )
+    }
+
+    addNumberFor?.let { person ->
+        ContactPickerSheet(
+            vm,
+            nameHint = person.name,
+            onDismiss = { addNumberFor = null },
+            onPick = { contact ->
+                addNumberFor = null
+                vm.save(person.copy(phone = contact.phone))
+                scope.launch { snackbar.showSnackbar("Added ${contact.phone} for ${person.name}") }
             },
         )
     }
@@ -278,6 +294,7 @@ private fun Header(
     onMatch: () -> Unit,
     onSaveToContacts: () -> Unit,
     onStats: () -> Unit,
+    onAddNumber: (Person) -> Unit,
     onSettings: () -> Unit,
 ) {
     var menu by remember { mutableStateOf(false) }
@@ -330,19 +347,29 @@ private fun Header(
         )
         if (next.isNotEmpty()) {
             Spacer(Modifier.height(16.dp))
-            Box(Modifier.padding(end = 12.dp)) { UpNextCard(next, today, vm, onEdit) }
+            Box(Modifier.padding(end = 12.dp)) { UpNextCard(next, today, vm, onEdit, onAddNumber) }
         }
     }
 }
 
-/** Frosted-glass card for the next birthday, with one-tap buttons to wish them. */
+/**
+ * Frosted-glass card for the next birthday, with one-tap buttons to wish them. Everyone
+ * sharing that date is listed; the quick buttons act on whoever is selected.
+ */
 @Composable
-private fun UpNextCard(next: List<Person>, today: LocalDate, vm: WishdayViewModel, onEdit: (Long) -> Unit) {
-    val person = next.first()
+private fun UpNextCard(
+    next: List<Person>,
+    today: LocalDate,
+    vm: WishdayViewModel,
+    onEdit: (Long) -> Unit,
+    onAddNumber: (Person) -> Unit,
+) {
     val context = LocalContext.current
-    val days = Birthdays.daysUntil(person, today)
-    val age = Birthdays.ageTurning(person, today)
+    val days = Birthdays.daysUntil(next.first(), today)
     val shape = RoundedCornerShape(28.dp)
+    val several = next.size > 1
+    var selectedId by remember(next.map { it.id }) { mutableStateOf(next.first().id) }
+    val person = next.firstOrNull { it.id == selectedId } ?: next.first()
 
     Column(
         modifier = Modifier
@@ -350,62 +377,94 @@ private fun UpNextCard(next: List<Person>, today: LocalDate, vm: WishdayViewMode
             .clip(shape)
             .background(Color.White.copy(alpha = 0.16f))
             .border(1.dp, Color.White.copy(alpha = 0.35f), shape)
-            .clickable { onEdit(person.id) }
             .padding(20.dp),
     ) {
-        Text(
-            if (days == 0L) "🎉 TODAY" else "UP NEXT",
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color.White.copy(alpha = 0.85f),
-        )
-        Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Avatar(person.name, size = 56, ring = true)
-            Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    person.name + badges(person), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
-                    color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    if (days == 0L) "🎉 TODAY" else "UP NEXT",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.85f),
                 )
-                val others = next.size - 1
                 Text(
-                    buildString {
-                        append(shortDate(person))
-                        if (age != null) append(" · turns $age")
-                        if (others > 0) append(" · +$others more")
-                    },
+                    if (several) "${shortDate(person)} · ${next.size} birthdays" else shortDate(person),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.85f),
                 )
             }
             Countdown(days)
         }
+        Spacer(Modifier.height(10.dp))
+
+        next.forEach { p ->
+            val selected = p.id == person.id
+            val age = Birthdays.ageTurning(p, today)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .then(if (several && selected) Modifier.background(Color.White.copy(alpha = 0.18f)) else Modifier)
+                    // First tap picks who the buttons message; tapping the picked person opens them.
+                    .clickable { if (selected) onEdit(p.id) else selectedId = p.id }
+                    .padding(vertical = 6.dp, horizontal = if (several) 8.dp else 0.dp),
+            ) {
+                Avatar(p.name, size = if (several) 44 else 56, ring = true)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        p.name + badges(p),
+                        style = if (several) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                    if (age != null) {
+                        Text("turns $age", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.85f))
+                    }
+                }
+            }
+        }
 
         val phone = person.phone?.takeIf { it.isNotBlank() }
-        Spacer(Modifier.height(16.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Spacer(Modifier.height(12.dp))
+        if (several) {
+            Text(
+                "Wish ${person.name.substringBefore(' ')}",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White.copy(alpha = 0.85f),
+                modifier = Modifier.padding(bottom = 6.dp),
+            )
+        }
+        Row(Modifier.fillMaxWidth()) {
+            val cell = Modifier.weight(1f)
             if (phone != null) {
-                QuickApp(Icons.AutoMirrored.Filled.Chat, SignalLauncher.appName(context)) {
+                QuickApp(Icons.AutoMirrored.Filled.Chat, SignalLauncher.appName(context), cell) {
                     context.launch(vm.signalIntent(person))
                 }
                 if (WhatsAppLauncher.isInstalled(context)) {
-                    QuickApp(Icons.AutoMirrored.Filled.Chat, "WhatsApp") { context.launch(vm.whatsAppIntent(person)) }
+                    QuickApp(Icons.AutoMirrored.Filled.Chat, "WhatsApp", cell) { context.launch(vm.whatsAppIntent(person)) }
                 }
-                QuickApp(Icons.Default.Sms, "Text") {
+                QuickApp(Icons.Default.Sms, "Text", cell) {
                     context.launch(vm.quickMessage(person) { msg ->
                         Intent(Intent.ACTION_SENDTO, ("smsto:" + Uri.encode(phone)).toUri()).putExtra("sms_body", msg)
                     })
                 }
-                QuickApp(Icons.Default.Call, "Call") {
+                QuickApp(Icons.Default.Call, "Call", cell) {
                     context.launch(Intent(Intent.ACTION_DIAL, ("tel:" + Uri.encode(phone)).toUri()))
                 }
             }
-            QuickApp(Icons.Default.Share, "Share") {
+            if (phone == null) {
+                QuickApp(Icons.Default.PersonAdd, "Add number", cell) { onAddNumber(person) }
+            }
+            QuickApp(Icons.Default.Share, "Share", cell) {
                 context.launch(vm.quickMessage(person) { msg ->
                     Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, msg), null)
                 })
             }
+            // Keep buttons a sensible size when only a few are shown.
+            repeat((if (phone != null) 0 else 2)) { Spacer(cell) }
         }
     }
 }
@@ -430,10 +489,10 @@ private fun Countdown(days: Long) {
 }
 
 @Composable
-private fun QuickApp(icon: ImageVector, label: String, onClick: () -> Unit) {
+private fun QuickApp(icon: ImageVector, label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(18.dp))
             .clickable(onClick = onClick)
             .padding(4.dp),
@@ -449,7 +508,7 @@ private fun QuickApp(icon: ImageVector, label: String, onClick: () -> Unit) {
             Icon(icon, contentDescription = null, tint = Color.White)
         }
         Spacer(Modifier.height(4.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
