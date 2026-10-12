@@ -1,5 +1,6 @@
 package io.github.wishday.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -14,6 +15,9 @@ enum class Channel {
 
     /** Signal opens with the message prefilled; one tap to send. */
     SIGNAL,
+
+    /** WhatsApp opens with the message prefilled; one tap to send. */
+    WHATSAPP,
 }
 
 @Entity(
@@ -35,4 +39,10 @@ data class Person(
     val contactLookupKey: String? = null,
     /** Last year a greeting was sent (or prompted), so we never double-send. */
     val lastGreetedYear: Int? = null,
+    /** Starred as important; shown first in ties and marked in the list. */
+    @ColumnInfo(defaultValue = "0") val favorite: Boolean = false,
+    /** An extra, earlier reminder this many days ahead (e.g. 14, to get a gift); null for none. */
+    val giftReminderDays: Int? = null,
+    /** Gift ideas and other notes, shown in the reminders. */
+    val notes: String? = null,
 )

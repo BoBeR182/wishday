@@ -2,7 +2,7 @@
 
 ![Wishday: never miss a birthday again](docs/banner.png)
 
-A small, open-source Android app that remembers birthdays and helps you wish people a happy birthday, by **SMS (fully automatic)** or **Signal (prefilled, one tap)**.
+A small, open-source Android app that remembers birthdays and helps you wish people a happy birthday, by **SMS (fully automatic)**, or **Signal / Molly / WhatsApp (prefilled, one tap)**.
 
 Inspired by [Birday](https://github.com/m-i-n-a-r/birday).
 
@@ -16,6 +16,8 @@ Inspired by [Birday](https://github.com/m-i-n-a-r/birday).
   - **Signal**: a notification that opens Signal with the message already typed; you tap send
 - A default message template with `{name}`, `{fullname}` and `{age}` placeholders, plus per-person overrides
 - An optional reminder 1–14 days ahead
+- Star important people and give them their own early gift reminder (3 days to 1 month ahead), with gift ideas shown in the reminder
+- Stats: birthdays by month, big birthdays coming up, birthday twins, star signs and more
 - Failed texts are retried automatically (up to 3 more times, 15 minutes apart), and you're told whether each one really went out
 - Export and import birthdays as CSV, for backups, moving phones, spreadsheets, or bringing them in from another app
 - Import a [Birday](https://github.com/m-i-n-a-r/birday) backup directly, to switch over in one step

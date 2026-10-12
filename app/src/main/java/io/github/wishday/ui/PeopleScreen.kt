@@ -35,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Settings
@@ -82,6 +83,7 @@ import io.github.wishday.contacts.ContactMatch
 import io.github.wishday.data.Channel
 import io.github.wishday.data.Person
 import io.github.wishday.messaging.SignalLauncher
+import io.github.wishday.messaging.WhatsAppLauncher
 import io.github.wishday.ui.theme.AvatarGradients
 import io.github.wishday.ui.theme.BrandGradient
 import kotlinx.coroutines.launch
@@ -96,6 +98,7 @@ fun PeopleScreen(
     onAdd: () -> Unit,
     onEdit: (Long) -> Unit,
     onSettings: () -> Unit,
+    onStats: () -> Unit,
 ) {
     val people by vm.people.collectAsState()
     val snackbar = remember { SnackbarHostState() }
@@ -179,6 +182,7 @@ fun PeopleScreen(
                     onImport = askContacts,
                     onMatch = { withContacts(action = findMatches) },
                     onSaveToContacts = { confirmSaveAll = true },
+                    onStats = onStats,
                     onSettings = onSettings,
                 )
             }
@@ -273,6 +277,7 @@ private fun Header(
     onImport: () -> Unit,
     onMatch: () -> Unit,
     onSaveToContacts: () -> Unit,
+    onStats: () -> Unit,
     onSettings: () -> Unit,
 ) {
     var menu by remember { mutableStateOf(false) }
@@ -310,6 +315,9 @@ private fun Header(
                         onClick = { menu = false; onSaveToContacts() },
                     )
                 }
+            }
+            IconButton(onClick = onStats) {
+                Icon(Icons.Default.BarChart, contentDescription = "Stats", tint = Color.White)
             }
             IconButton(onClick = onSettings) {
                 Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
@@ -357,7 +365,7 @@ private fun UpNextCard(next: List<Person>, today: LocalDate, vm: WishdayViewMode
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    person.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
+                    person.name + badges(person), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
                     color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
                 val others = next.size - 1
@@ -380,6 +388,9 @@ private fun UpNextCard(next: List<Person>, today: LocalDate, vm: WishdayViewMode
             if (phone != null) {
                 QuickApp(Icons.AutoMirrored.Filled.Chat, SignalLauncher.appName(context)) {
                     context.launch(vm.signalIntent(person))
+                }
+                if (WhatsAppLauncher.isInstalled(context)) {
+                    QuickApp(Icons.AutoMirrored.Filled.Chat, "WhatsApp") { context.launch(vm.whatsAppIntent(person)) }
                 }
                 QuickApp(Icons.Default.Sms, "Text") {
                     context.launch(vm.quickMessage(person) { msg ->
@@ -463,7 +474,7 @@ private fun PersonCard(person: Person, today: LocalDate, onClick: () -> Unit) {
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                person.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
+                person.name + badges(person), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -498,6 +509,7 @@ private fun ChannelIcon(channel: Channel) {
     val (icon, description) = when (channel) {
         Channel.SMS -> Icons.Default.Sms to "Sends SMS"
         Channel.SIGNAL -> Icons.AutoMirrored.Filled.Chat to "Signal"
+        Channel.WHATSAPP -> Icons.AutoMirrored.Filled.Chat to "WhatsApp"
         Channel.NONE -> return
     }
     Spacer(Modifier.width(6.dp))
@@ -524,6 +536,12 @@ private fun Avatar(name: String, size: Int, ring: Boolean = false) {
             fontWeight = FontWeight.Bold,
         )
     }
+}
+
+/** ⭐ for important people, 🎁 when a gift reminder is set. */
+private fun badges(person: Person) = buildString {
+    if (person.favorite) append(" ⭐")
+    if (person.giftReminderDays != null) append(" 🎁")
 }
 
 @Composable

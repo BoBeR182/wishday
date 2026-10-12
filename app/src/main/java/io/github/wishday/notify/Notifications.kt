@@ -17,6 +17,7 @@ import io.github.wishday.MainActivity
 import io.github.wishday.R
 import io.github.wishday.data.Person
 import io.github.wishday.messaging.SignalLauncher
+import io.github.wishday.messaging.WhatsAppLauncher
 
 class Notifications(private val context: Context) {
 
@@ -34,17 +35,24 @@ class Notifications(private val context: Context) {
     }
 
     /** Today's birthday, delivered over Signal: tapping opens Signal with the message ready. */
-    fun signalPrompt(person: Person, message: String) {
+    fun signalPrompt(person: Person, message: String) =
+        appPrompt(person, message, SignalLauncher.appName(context), SignalLauncher.intentFor(context, person.phone, message))
+
+    /** Today's birthday, delivered over WhatsApp: tapping opens the chat with the message ready. */
+    fun whatsAppPrompt(person: Person, message: String) =
+        appPrompt(person, message, "WhatsApp", WhatsAppLauncher.intentFor(context, person.phone, message))
+
+    private fun appPrompt(person: Person, message: String, app: String, intent: Intent) {
         val tap = PendingIntent.getActivity(
             context,
             requestCode(person, KIND_TODAY),
-            SignalLauncher.intentFor(context, person.phone, message),
+            intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         post(
             person, KIND_TODAY, CH_TODAY,
             title = "🎂 It's ${person.name}'s birthday",
-            text = "Tap to send on Signal: $message",
+            text = "Tap to send on $app: $message",
             tap = tap,
         )
     }
@@ -59,12 +67,28 @@ class Notifications(private val context: Context) {
         )
     }
 
+    /** The person's own early reminder, to leave time for a gift. */
+    fun giftReminder(person: Person, days: Long) {
+        val whenText = when {
+            days == 1L -> "tomorrow"
+            days % 7 == 0L && days >= 7 -> if (days == 7L) "in 1 week" else "in ${days / 7} weeks"
+            else -> "in $days days"
+        }
+        post(
+            person, KIND_UPCOMING, CH_UPCOMING,
+            title = "🎁 ${person.name}'s birthday is $whenText",
+            text = person.notes?.takeIf { it.isNotBlank() }?.let { "Gift ideas: $it" }
+                ?: "Time to think about a gift.",
+            tap = openApp(),
+        )
+    }
+
     fun upcoming(person: Person, days: Long) {
         val whenText = if (days == 1L) "tomorrow" else "in $days days"
         post(
             person, KIND_UPCOMING, CH_UPCOMING,
             title = "${person.name}'s birthday is $whenText",
-            text = "Wishday will remind you on the day.",
+            text = person.notes?.takeIf { it.isNotBlank() }?.let { "Notes: $it" } ?: "Wishday will remind you on the day.",
             tap = openApp(),
         )
     }

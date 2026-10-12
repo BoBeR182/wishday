@@ -1,6 +1,8 @@
 package io.github.wishday.ui
 
 import android.Manifest
+import androidx.core.content.ContextCompat
+import android.content.pm.PackageManager
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -13,6 +15,12 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.outlined.StarOutline
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -81,6 +89,9 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
     var year by rememberSaveable { mutableStateOf(original.year?.toString().orEmpty()) }
     var channel by rememberSaveable { mutableStateOf(original.channel) }
     var message by rememberSaveable { mutableStateOf(original.customMessage.orEmpty()) }
+    var favorite by rememberSaveable { mutableStateOf(original.favorite) }
+    var giftDays by rememberSaveable { mutableStateOf(original.giftReminderDays) }
+    var notes by rememberSaveable { mutableStateOf(original.notes.orEmpty()) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var confirmSms by rememberSaveable { mutableStateOf(false) }
 
@@ -99,16 +110,32 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
         year = yearValue,
         channel = channel,
         customMessage = message.ifBlank { null },
+        favorite = favorite,
+        giftReminderDays = giftDays,
+        notes = notes.trim().ifBlank { null },
     )
 
     // The system picker grants access to just the chosen number, so no contacts permission is needed.
-    val pickPhone = rememberLauncherForActivityResult(PickPhone) { uri ->
+    // Wishday's own searchable picker; falls back to the system picker without contacts permission.
+    var showPicker by rememberSaveable { mutableStateOf(false) }
+    val systemPicker = rememberLauncherForActivityResult(PickPhone) { uri ->
         uri ?: return@rememberLauncherForActivityResult
         context.contentResolver.query(uri, arrayOf(Phone.NUMBER, Phone.DISPLAY_NAME), null, null, null)?.use { c ->
             if (c.moveToFirst()) {
                 c.getString(0)?.let { phone = it }
                 if (name.isBlank()) c.getString(1)?.let { name = it }
             }
+        }
+    }
+
+    val contactsPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) showPicker = true else systemPicker.launch(null)
+    }
+    fun pickContact() {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
+            showPicker = true
+        } else {
+            contactsPermission.launch(Manifest.permission.READ_CONTACTS)
         }
     }
 
@@ -133,6 +160,13 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
                     IconButton(onClick = onDone) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 },
                 actions = {
+                    IconButton(onClick = { favorite = !favorite }) {
+                        Icon(
+                            if (favorite) Icons.Filled.Star else Icons.Outlined.StarOutline,
+                            contentDescription = if (favorite) "Important (tap to unstar)" else "Mark as important",
+                            tint = if (favorite) Color(0xFFFFB300) else LocalContentColor.current,
+                        )
+                    }
                     if (!isNew) {
                         IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Default.Delete, "Delete") }
                     }
@@ -177,10 +211,31 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
                 supportingText = if (needsPhone) ({ Text("Needed to send messages") }) else null,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 trailingIcon = {
-                    IconButton(onClick = { pickPhone.launch(null) }) {
+                    IconButton(onClick = ::pickContact) {
                         Icon(Icons.Default.Contacts, contentDescription = "Pick from contacts")
                     }
                 },
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Text("Gift reminder", style = MaterialTheme.typography.titleSmall)
+            Text(
+                "An extra heads-up ahead of time, so there's time to get something.",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+            ) {
+                GIFT_REMINDER_OPTIONS.forEach { (days, label) ->
+                    FilterChip(selected = giftDays == days, onClick = { giftDays = days }, label = { Text(label) })
+                }
+            }
+            OutlinedTextField(
+                value = notes, onValueChange = { notes = it },
+                label = { Text("Gift ideas & notes") },
+                placeholder = { Text("Likes coffee, wants a new book…") },
+                supportingText = { Text("Shown in their reminders") },
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -218,18 +273,24 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
                             } else {
                                 vm.save(current())
                                 try {
-                                    context.startActivity(vm.signalIntent(current()))
+                                    context.startActivity(
+                                        if (channel == Channel.WHATSAPP) vm.whatsAppIntent(current())
+                                        else vm.signalIntent(current()),
+                                    )
                                 } catch (_: ActivityNotFoundException) {
-                                    Toast.makeText(context, "Signal isn't installed", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "That app isn't installed", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
-                            if (channel == Channel.SMS) "Send SMS now"
-                            else if (SignalLauncher.isInstalled(context)) "Open in ${SignalLauncher.appName(context)} now"
-                            else "Share message now",
+                            when {
+                                channel == Channel.SMS -> "Send SMS now"
+                                channel == Channel.WHATSAPP -> "Open in WhatsApp now"
+                                SignalLauncher.isInstalled(context) -> "Open in ${SignalLauncher.appName(context)} now"
+                                else -> "Share message now"
+                            },
                         )
                     }
                 }
@@ -243,6 +304,19 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
             title = { Text("Delete ${original.name}?") },
             confirmButton = { TextButton(onClick = { vm.delete(original); onDone() }) { Text("Delete") } },
             dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+        )
+    }
+
+    if (showPicker) {
+        ContactPickerSheet(
+            vm,
+            nameHint = name,
+            onDismiss = { showPicker = false },
+            onPick = { contact ->
+                showPicker = false
+                phone = contact.phone
+                if (name.isBlank()) name = contact.name
+            },
         )
     }
 
@@ -296,11 +370,15 @@ internal fun MonthPicker(month: Int, onChange: (Int) -> Unit, modifier: Modifier
     }
 }
 
+/** Gift reminder choices: null is off. */
+private val GIFT_REMINDER_OPTIONS = listOf(null to "Off", 3 to "3 days", 7 to "1 week", 14 to "2 weeks", 30 to "1 month")
+
 private val Channel.label
     get() = when (this) {
-        Channel.NONE -> "Remind me"
-        Channel.SMS -> "Auto SMS"
+        Channel.NONE -> "Remind"
+        Channel.SMS -> "SMS"
         Channel.SIGNAL -> "Signal"
+        Channel.WHATSAPP -> "WhatsApp"
     }
 
 private val Channel.explanation
@@ -308,4 +386,5 @@ private val Channel.explanation
         Channel.NONE -> "You'll get a notification; Wishday won't send anything."
         Channel.SMS -> "Wishday texts them automatically at your send time."
         Channel.SIGNAL -> "You'll get a notification that opens Signal with the message ready — just tap send."
+        Channel.WHATSAPP -> "You'll get a notification that opens WhatsApp with the message ready — just tap send."
     }

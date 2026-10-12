@@ -12,11 +12,13 @@ import io.github.wishday.contacts.ContactImporter
 import io.github.wishday.contacts.ContactMatch
 import io.github.wishday.contacts.ContactMatcher
 import io.github.wishday.contacts.ContactWriter
+import io.github.wishday.contacts.PhoneContact
 import io.github.wishday.data.AppDatabase
 import io.github.wishday.data.Person
 import io.github.wishday.data.Settings
 import io.github.wishday.messaging.SignalLauncher
 import io.github.wishday.messaging.SmsSender
+import io.github.wishday.messaging.WhatsAppLauncher
 import io.github.wishday.work.BirthdayWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
@@ -93,6 +95,11 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun Person.identity() = Triple(name.trim().lowercase(), month, day)
 
+    /** Every contact with a phone number, for the contact picker. Requires READ_CONTACTS. */
+    suspend fun loadPhoneContacts(): List<PhoneContact> = withContext(Dispatchers.IO) {
+        ContactImporter(getApplication()).readPhoneContacts()
+    }
+
     /** People without a number who have exactly one same-named contact. Requires READ_CONTACTS. */
     suspend fun findContactMatches(): List<ContactMatch> = withContext(Dispatchers.IO) {
         ContactMatcher.match(dao.getAll(), ContactImporter(getApplication()).readPhoneContacts())
@@ -133,6 +140,11 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
     fun quickMessage(person: Person, intent: (message: String) -> Intent): Intent {
         markGreetedIfToday(person)
         return intent(messageFor(person))
+    }
+
+    fun whatsAppIntent(person: Person): Intent {
+        markGreetedIfToday(person)
+        return WhatsAppLauncher.intentFor(getApplication(), person.phone, messageFor(person))
     }
 
     fun signalIntent(person: Person): Intent {

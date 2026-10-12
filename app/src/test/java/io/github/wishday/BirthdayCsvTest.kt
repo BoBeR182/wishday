@@ -11,7 +11,10 @@ class BirthdayCsvTest {
     @Test
     fun roundTripKeepsEverything() {
         val people = listOf(
-            Person(name = "Grace Hopper", phone = "+15555550123", month = 12, day = 9, year = 1906, channel = Channel.SMS),
+            Person(
+                name = "Grace Hopper", phone = "+15555550123", month = 12, day = 9, year = 1906, channel = Channel.SMS,
+                favorite = true, giftReminderDays = 14, notes = "Likes compilers, tea",
+            ),
             Person(
                 name = "Ada Lovelace", month = 12, day = 10, channel = Channel.NONE,
                 customMessage = "Happy birthday, {name}!\nSee you soon, \"Ada\"",
@@ -25,7 +28,7 @@ class BirthdayCsvTest {
     @Test
     fun yearlessBirthdaysAreWrittenWithDashes() {
         val csv = BirthdayCsv.write(listOf(Person(name = "Ada", month = 3, day = 7)))
-        assertEquals("name,birthday,phone,channel,message\r\nAda,--03-07,,none,\r\n", csv)
+        assertEquals("name,birthday,phone,channel,message,important,gift_reminder_days,notes\r\nAda,--03-07,,none,,,,\r\n", csv)
     }
 
     @Test

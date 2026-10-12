@@ -23,6 +23,8 @@ object BirdayBackup {
         val yearMatters: Boolean,
         /** `yyyy-MM-dd`. */
         val originalDate: String,
+        val favorite: Boolean = false,
+        val notes: String? = null,
     )
 
     /** True when [header] (the first bytes of a file) is a SQLite database rather than text. */
@@ -44,6 +46,8 @@ object BirdayBackup {
             month = date.monthValue,
             day = date.dayOfMonth,
             year = date.year.takeIf { event.yearMatters },
+            favorite = event.favorite,
+            notes = event.notes?.trim()?.ifEmpty { null },
         )
     }
 
@@ -52,7 +56,10 @@ object BirdayBackup {
         scratch.outputStream().use { input.copyTo(it) }
         try {
             val events = SQLiteDatabase.openDatabase(scratch.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
-                db.rawQuery("SELECT type, name, surname, yearMatter, originalDate FROM Event", null).use { c ->
+                // favorite and notes only exist in newer Birday versions.
+                val columns = db.rawQuery("SELECT * FROM Event LIMIT 0", null).use { it.columnNames.toSet() }
+                val extra = listOf("favorite", "notes").joinToString("") { if (it in columns) ", $it" else ", NULL" }
+                db.rawQuery("SELECT type, name, surname, yearMatter, originalDate$extra FROM Event", null).use { c ->
                     buildList {
                         while (c.moveToNext()) {
                             add(
@@ -62,6 +69,8 @@ object BirdayBackup {
                                     surname = c.getString(2),
                                     yearMatters = !c.isNull(3) && c.getInt(3) != 0,
                                     originalDate = c.getString(4).orEmpty(),
+                                    favorite = !c.isNull(5) && c.getInt(5) != 0,
+                                    notes = c.getString(6),
                                 ),
                             )
                         }

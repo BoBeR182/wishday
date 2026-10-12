@@ -18,6 +18,7 @@ import io.github.wishday.ui.AboutScreen
 import io.github.wishday.ui.EditPersonScreen
 import io.github.wishday.ui.PeopleScreen
 import io.github.wishday.ui.SettingsScreen
+import io.github.wishday.ui.StatsScreen
 import io.github.wishday.ui.WishdayViewModel
 import io.github.wishday.ui.theme.WishdayTheme
 import io.github.wishday.work.BirthdayWorker
@@ -40,7 +41,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             WishdayTheme {
                 val vm: WishdayViewModel = viewModel()
-                // Screen encoding: "list", "settings", "about:<screen to return to>", "edit:<id>" or "edit:new".
+                // Screen encoding: "list", "settings", "stats", "about:<screen to return to>", "edit:<id>" or "edit:new".
                 var screen by rememberSaveable { mutableStateOf("list") }
                 val back = { screen = if (screen.startsWith("about:")) screen.removePrefix("about:") else "list" }
                 BackHandler(enabled = screen != "list", onBack = back)
@@ -48,6 +49,7 @@ class MainActivity : ComponentActivity() {
                 when {
                     screen == "settings" -> SettingsScreen(vm, onDone = back, onAbout = { screen = "about:settings" })
                     screen.startsWith("about:") -> AboutScreen(onDone = back)
+                    screen == "stats" -> StatsScreen(vm, onDone = back, onOpen = { screen = "edit:$it" })
                     screen.startsWith("edit:") ->
                         EditPersonScreen(vm, screen.removePrefix("edit:").toLongOrNull(), onDone = back)
                     else -> PeopleScreen(
@@ -55,6 +57,7 @@ class MainActivity : ComponentActivity() {
                         onAdd = { screen = "edit:new" },
                         onEdit = { screen = "edit:$it" },
                         onSettings = { screen = "settings" },
+                        onStats = { screen = "stats" },
                     )
                 }
             }

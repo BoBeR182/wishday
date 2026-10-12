@@ -19,6 +19,13 @@ class BirdayBackupTest {
     }
 
     @Test
+    fun favoriteAndNotesCarryOver() {
+        val person = BirdayBackup.toPerson(Event("BIRTHDAY", "Ada", null, true, "1815-12-10", favorite = true, notes = " books "))!!
+        assertTrue(person.favorite)
+        assertEquals("books", person.notes)
+    }
+
+    @Test
     fun placeholderYearIsDropped() {
         val person = BirdayBackup.toPerson(Event("BIRTHDAY", "Ada", null, yearMatters = false, "2024-03-07"))!!
         assertEquals("Ada", person.name)

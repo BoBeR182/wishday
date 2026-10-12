@@ -8,12 +8,13 @@ import io.github.wishday.data.Person
  * Plain CSV export/import, so birthdays can be backed up, moved to a new phone,
  * edited in a spreadsheet, or brought in from another app.
  *
- * Columns: name, birthday (`2001-10-12`, or `--10-12` without a year), phone, channel, message.
+ * Columns: name, birthday (`2001-10-12`, or `--10-12` without a year), phone, channel, message,
+ * important (`yes`/blank), gift_reminder_days, notes.
  * Only name and birthday are required on import; columns are matched by header, in any order.
  */
 object BirthdayCsv {
 
-    private val HEADER = listOf("name", "birthday", "phone", "channel", "message")
+    private val HEADER = listOf("name", "birthday", "phone", "channel", "message", "important", "gift_reminder_days", "notes")
 
     private val NAME_HEADERS = setOf("name", "full name", "fullname", "display name")
     private val DATE_HEADERS = setOf("birthday", "birthdate", "date", "date of birth", "dob")
@@ -30,6 +31,9 @@ object BirthdayCsv {
                     p.phone.orEmpty(),
                     p.channel.name.lowercase(),
                     p.customMessage.orEmpty(),
+                    if (p.favorite) "yes" else "",
+                    p.giftReminderDays?.toString().orEmpty(),
+                    p.notes.orEmpty(),
                 ),
             )
         }
@@ -47,9 +51,13 @@ object BirthdayCsv {
         // No recognisable header: assume our own column order.
         val hasHeader = nameCol >= 0 && dateCol >= 0
         val cols = if (hasHeader) {
-            Columns(nameCol, dateCol, column(PHONE_HEADERS), column(setOf("channel")), column(setOf("message")))
+            Columns(
+                nameCol, dateCol, column(PHONE_HEADERS), column(setOf("channel")), column(setOf("message")),
+                column(setOf("important", "favorite", "starred")), column(setOf("gift_reminder_days")),
+                column(setOf("notes", "note", "gift ideas")),
+            )
         } else {
-            Columns(0, 1, 2, 3, 4)
+            Columns(0, 1, 2, 3, 4, 5, 6, 7)
         }
 
         val people = mutableListOf<Person>()
@@ -63,7 +71,10 @@ object BirthdayCsv {
 
     data class Result(val people: List<Person>, val skipped: Int)
 
-    private class Columns(val name: Int, val date: Int, val phone: Int, val channel: Int, val message: Int) {
+    private class Columns(
+        val name: Int, val date: Int, val phone: Int, val channel: Int, val message: Int,
+        val important: Int, val giftDays: Int, val notes: Int,
+    ) {
         fun toPerson(row: List<String>): Person? {
             fun cell(i: Int) = row.getOrNull(i)?.trim().orEmpty()
             val name = cell(name).ifBlank { return null }
@@ -81,6 +92,9 @@ object BirthdayCsv {
                 year = date.year,
                 channel = channel,
                 customMessage = cell(message).ifBlank { null },
+                favorite = cell(important).lowercase() in setOf("yes", "true", "1", "y", "x"),
+                giftReminderDays = cell(giftDays).toIntOrNull()?.takeIf { it in 1..365 },
+                notes = cell(notes).ifBlank { null },
             )
         }
     }

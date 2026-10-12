@@ -36,7 +36,7 @@ object Birthdays {
 
     /** People sorted by how soon their birthday is. */
     fun upcoming(people: List<Person>, today: LocalDate): List<Person> =
-        people.sortedWith(compareBy({ daysUntil(it, today) }, { it.name.lowercase() }))
+        people.sortedWith(compareBy({ daysUntil(it, today) }, { !it.favorite }, { it.name.lowercase() }))
 
     /**
      * Fills a message template. Supported placeholders:

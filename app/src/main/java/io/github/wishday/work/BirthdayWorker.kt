@@ -37,6 +37,9 @@ class BirthdayWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     greet(person, settings, sms, notifications, today)
                     dao.markGreeted(person.id, today.year)
                 }
+                // The early gift reminder comes first, so a person with both gets the gift note.
+                firstRunToday && person.giftReminderDays != null && days == person.giftReminderDays.toLong() ->
+                    notifications.giftReminder(person, days)
                 firstRunToday && settings.remindDaysBefore > 0 && days == settings.remindDaysBefore.toLong() ->
                     notifications.upcoming(person, days)
             }
@@ -61,6 +64,7 @@ class BirthdayWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     .onFailure { notifications.smsFailed(person, message, it.message ?: "SMS failed") }
             }
             Channel.SIGNAL -> notifications.signalPrompt(person, message)
+            Channel.WHATSAPP -> notifications.whatsAppPrompt(person, message)
             Channel.NONE -> notifications.todayReminder(person)
         }
     }
