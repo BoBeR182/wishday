@@ -52,4 +52,25 @@ class ContactMatcherTest {
         val result = matchedNames(listOf(person("Ada Lovelace"), person("ada lovelace")), listOf(contact("1", "Ada Lovelace")))
         assertEquals(1, result.size)
     }
+
+    @Test
+    fun likelyAcceptsShortFormsOfTheFirstName() {
+        val likely = ContactMatcher.likely("Sab", listOf(contact("1", "Sabrina Kowalski"), contact("2", "Ben Ross")))
+        assertEquals("1", likely?.lookupKey)
+    }
+
+    @Test
+    fun likelyPrefersMoreSharedWords() {
+        val contacts = listOf(contact("1", "Sam Brown"), contact("2", "Samantha Stone"))
+        assertEquals("2", ContactMatcher.likely("Sam Stone", contacts)?.lookupKey)
+    }
+
+    @Test
+    fun likelyGivesNothingOnATieOrDifferentFirstName() {
+        val contacts = listOf(contact("1", "Dan Lee"), contact("2", "Daniel Park"), contact("3", "Ann Moss"))
+        assertEquals(null, ContactMatcher.likely("Dan", contacts))
+        assertEquals(null, ContactMatcher.likely("Moss", contacts))
+        // Two-letter names are too short to count as an abbreviation.
+        assertEquals(null, ContactMatcher.likely("Al", listOf(contact("4", "Alice Wong"))))
+    }
 }

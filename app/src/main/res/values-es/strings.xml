@@ -58,6 +58,20 @@
         <item quantity="one">%d ya tenía uno</item>
         <item quantity="other">%d ya tenían uno</item>
     </plurals>
+    <string name="create_contacts_title">No están en tus contactos</string>
+    <string name="create_contacts_text">Estas personas no están vinculadas a un contacto. Vincula a quien esté guardado con otro nombre, o marca las que quieras añadir como contactos nuevos.</string>
+    <string name="duplicate_of">Ya está en Wishday como «%1$s»</string>
+    <string name="maybe_contact">¿Es «%1$s» de tus contactos?</string>
+    <string name="merge">Unir</string>
+    <string name="link">Vincular</string>
+    <string name="contact_already_linked">Ese contacto ya está vinculado a otra persona en Wishday</string>
+    <string name="birthday_only">Solo cumpleaños, sin número</string>
+    <string name="create_count">Crear %1$d</string>
+    <string name="not_now">Ahora no</string>
+    <plurals name="contacts_created">
+        <item quantity="one">%d contacto creado</item>
+        <item quantity="other">%d contactos creados</item>
+    </plurals>
     <plurals name="contacts_not_editable">
         <item quantity="one">%d no se pudo editar</item>
         <item quantity="other">%d no se pudieron editar</item>
@@ -148,6 +162,7 @@
     <string name="export_failed">Error al exportar: %1$s</string>
     <string name="imported_count">Importados: %1$d</string>
     <string name="already_saved_count">%1$d ya guardados</string>
+    <string name="updated_count">Ajustes restaurados para %1$d</string>
     <string name="skipped_count">%1$d omitidos</string>
     <string name="import_failed">Error al importar: %1$s</string>
     <string name="backup">Copia de seguridad</string>
@@ -160,6 +175,9 @@
 
     <!-- Editor -->
     <string name="sms_permission_denied">Sin permiso de SMS, Wishday solo te lo recordará</string>
+    <string name="sms_permission_needed">El permiso de SMS está desactivado, así que Wishday no puede enviarle mensajes.</string>
+    <string name="sms_permission_settings">Activa SMS en Permisos</string>
+    <string name="allow">Permitir</string>
     <string name="edit_birthday">Editar cumpleaños</string>
     <string name="mark_important">Marcar como importante</string>
     <string name="unmark_important">Importante (toca para quitar)</string>

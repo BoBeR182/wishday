@@ -35,6 +35,28 @@ object ContactMatcher {
         return matches
     }
 
+    /**
+     * The contact whose name looks most like [name], for a suggestion rather than an automatic
+     * link: their first names must agree, where one may be short for the other ("Sab" and
+     * "Sabrina"), and more shared words rank higher. Null when nothing qualifies or it's a tie.
+     */
+    fun likely(name: String, contacts: List<PhoneContact>): PhoneContact? {
+        val words = normalize(name).split(' ').filter { it.isNotEmpty() }
+        val first = words.firstOrNull() ?: return null
+        val scored = contacts.mapNotNull { c ->
+            val theirs = normalize(c.name).split(' ').filter { it.isNotEmpty() }
+            val theirFirst = theirs.firstOrNull() ?: return@mapNotNull null
+            if (!sameName(first, theirFirst)) return@mapNotNull null
+            c to words.drop(1).count { w -> theirs.drop(1).any { sameName(w, it) } }
+        }
+        val best = scored.maxOfOrNull { it.second } ?: return null
+        return scored.filter { it.second == best }.singleOrNull()?.first
+    }
+
+    /** Equal, or one starts with the other and is at least three letters ("sab" / "sabrina"). */
+    private fun sameName(a: String, b: String) =
+        a == b || (minOf(a.length, b.length) >= 3 && (a.startsWith(b) || b.startsWith(a)))
+
     /** "  José  O'Brien " -> "jose obrien": case, accents, punctuation and spacing ignored. */
     fun normalize(name: String): String =
         Normalizer.normalize(name, Normalizer.Form.NFD)

@@ -14,6 +14,7 @@ import io.github.wishday.contacts.ContactMatcher
 import io.github.wishday.contacts.ContactWriter
 import io.github.wishday.contacts.PhoneContact
 import io.github.wishday.data.AppDatabase
+import io.github.wishday.data.Channel
 import io.github.wishday.data.Person
 import io.github.wishday.data.Settings
 import io.github.wishday.messaging.SignalLauncher
@@ -64,7 +65,11 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Saves [person] and returns their id (new or existing). */
     suspend fun saveNow(person: Person): Long {
-        val id = dao.upsert(person).takeIf { it > 0 } ?: person.id
+        // One contact, one person: drop a link someone else already holds.
+        val linkTaken = person.contactLookupKey != null &&
+            dao.getAll().any { it.contactLookupKey == person.contactLookupKey && it.id != person.id }
+        val toSave = if (linkTaken) person.copy(contactLookupKey = null) else person
+        val id = dao.upsert(toSave).takeIf { it > 0 } ?: person.id
         val today = LocalDate.now()
         if (Birthdays.isToday(person, today) && person.lastGreetedYear != today.year) {
             BirthdayWorker.catchUpIfDue(getApplication())
@@ -91,8 +96,9 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * Adds people from a CSV file or a Birday backup (detected from the file's contents),
-     * skipping anyone already saved with the same name and birthday.
+     * Adds people from a CSV file or a Birday backup (detected from the file's contents). Anyone
+     * already saved with the same name and birthday (e.g. just imported from contacts) gets the
+     * backup's settings filled into whatever they're missing, rather than being skipped.
      */
     suspend fun importFile(uri: Uri): ImportResult = withContext(Dispatchers.IO) {
         val app = getApplication<Application>()
@@ -103,14 +109,40 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
         } else {
             BirthdayCsv.read(bytes.toString(Charsets.UTF_8))
         }
-        val seen = dao.getAll().mapTo(mutableSetOf()) { it.identity() }
-        val fresh = parsed.people.filter { seen.add(it.identity()) }
+        val saved = dao.getAll().associateByTo(mutableMapOf()) { it.identity() }
+        var added = 0
+        var updated = 0
         // No catch-up run here: restoring a backup on a new phone shouldn't text someone already greeted today.
-        fresh.forEach { dao.upsert(it) }
-        ImportResult(added = fresh.size, duplicates = parsed.people.size - fresh.size, invalid = parsed.skipped)
+        for (person in parsed.people) {
+            val existing = saved[person.identity()]
+            val merged = existing?.fillFrom(person) ?: person
+            if (merged == existing) continue
+            val id = dao.upsert(merged).takeIf { it > 0 } ?: merged.id
+            saved[person.identity()] = merged.copy(id = id)
+            if (existing == null) added++ else updated++
+        }
+        ImportResult(
+            added = added,
+            updated = updated,
+            duplicates = parsed.people.size - added - updated,
+            invalid = parsed.skipped,
+        )
     }
 
-    data class ImportResult(val added: Int, val duplicates: Int, val invalid: Int)
+    data class ImportResult(val added: Int, val updated: Int, val duplicates: Int, val invalid: Int)
+
+    /** Keeps everything already set here, taking only what's missing from [backup]. */
+    private fun Person.fillFrom(backup: Person) = copy(
+        phone = phone ?: backup.phone,
+        year = year ?: backup.year,
+        channel = if (channel == Channel.NONE) backup.channel else channel,
+        customMessage = customMessage ?: backup.customMessage,
+        contactLookupKey = contactLookupKey ?: backup.contactLookupKey,
+        lastGreetedYear = listOfNotNull(lastGreetedYear, backup.lastGreetedYear).maxOrNull(),
+        favorite = favorite || backup.favorite,
+        giftReminderDays = giftReminderDays ?: backup.giftReminderDays,
+        notes = notes ?: backup.notes,
+    )
 
     private fun Person.identity() = Triple(name.trim().lowercase(), month, day)
 
@@ -131,17 +163,74 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    data class ContactWriteResult(val added: Int, val alreadyHad: Int, val notWritten: Int)
+    data class ContactWriteResult(
+        val added: Int,
+        val alreadyHad: Int,
+        val notWritten: Int,
+        /** People with no contact to write to, for offering to create one. */
+        val unlinked: List<UnlinkedPerson> = emptyList(),
+    )
 
-    /** Adds birthdays to the linked contacts of [people] (everyone linked when null). Requires WRITE_CONTACTS. */
+    /**
+     * Someone with no contact. [duplicateOf]: another person here is linked to the contact with this
+     * number, so they're probably the same person. [likelyContact]: a contact with a similar name.
+     */
+    data class UnlinkedPerson(val person: Person, val duplicateOf: Person? = null, val likelyContact: PhoneContact? = null)
+
+    /**
+     * Adds birthdays to the linked contacts of [people] (everyone when null). People with a number
+     * but no link are first linked to the one contact with that number, if there is one.
+     * Requires READ_CONTACTS and WRITE_CONTACTS.
+     */
     suspend fun writeBirthdaysToContacts(people: List<Person>? = null): ContactWriteResult = withContext(Dispatchers.IO) {
         val writer = ContactWriter(getApplication())
-        val outcomes = (people ?: dao.getAll()).mapNotNull { p -> p.contactLookupKey?.let { writer.addBirthday(it, p) } }
+        val all = dao.getAll()
+        val taken = all.mapNotNullTo(mutableSetOf()) { it.contactLookupKey }
+        val linked = (people ?: all).map { p ->
+            if (p.contactLookupKey != null || p.phone.isNullOrBlank()) return@map p
+            val key = writer.findByPhone(p.phone)?.takeIf { taken.add(it) } ?: return@map p
+            p.copy(contactLookupKey = key).also { dao.upsert(it) }
+        }
+        val outcomes = linked.mapNotNull { p -> p.contactLookupKey?.let { writer.addBirthday(it, p) } }
+        val unlinked = if (people != null) emptyList() else {
+            val contacts = ContactImporter(getApplication()).readPhoneContacts().filter { it.lookupKey !in taken }
+            val byKey = all.filter { it.contactLookupKey != null }.associateBy { it.contactLookupKey }
+            linked.filter { it.contactLookupKey == null }.map { p ->
+                val duplicate = p.phone?.takeIf { it.isNotBlank() }?.let(writer::findByPhone)?.let(byKey::get)
+                UnlinkedPerson(p, duplicate, if (duplicate == null) ContactMatcher.likely(p.name, contacts) else null)
+            }
+        }
         ContactWriteResult(
             added = outcomes.count { it == ContactWriter.Outcome.ADDED },
             alreadyHad = outcomes.count { it == ContactWriter.Outcome.ALREADY_HAS_BIRTHDAY },
             notWritten = outcomes.count { it == ContactWriter.Outcome.NOT_FOUND || it == ContactWriter.Outcome.READ_ONLY },
+            unlinked = unlinked,
         )
+    }
+
+    /** Links [person] to [contact] (taking its number if they have none) and adds the birthday to it. */
+    suspend fun linkToContact(person: Person, contact: PhoneContact): Boolean = withContext(Dispatchers.IO) {
+        if (dao.getAll().any { it.contactLookupKey == contact.lookupKey && it.id != person.id }) return@withContext false
+        val linked = person.copy(contactLookupKey = contact.lookupKey, phone = person.phone ?: contact.phone)
+        dao.upsert(linked)
+        ContactWriter(getApplication()).addBirthday(contact.lookupKey, linked)
+        true
+    }
+
+    /** Folds [duplicate]'s settings into [keep] (filling only what [keep] lacks) and deletes [duplicate]. */
+    suspend fun merge(duplicate: Person, keep: Person) = withContext(Dispatchers.IO) {
+        dao.upsert(keep.fillFrom(duplicate))
+        dao.delete(duplicate)
+    }
+
+    /** Creates a contact for each of [people] and links them to it; returns how many were created. */
+    suspend fun createContacts(people: List<Person>): Int = withContext(Dispatchers.IO) {
+        val writer = ContactWriter(getApplication())
+        people.count { p ->
+            val key = runCatching { writer.createContact(p) }.getOrNull() ?: return@count false
+            dao.upsert(p.copy(contactLookupKey = key))
+            true
+        }
     }
 
     fun messageFor(person: Person): String =

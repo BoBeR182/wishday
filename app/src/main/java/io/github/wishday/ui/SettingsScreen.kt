@@ -273,6 +273,7 @@ private fun Backup(vm: WishdayViewModel) {
                     toast(
                         buildList {
                             add(context.getString(R.string.imported_count, r.added))
+                            if (r.updated > 0) add(context.getString(R.string.updated_count, r.updated))
                             if (r.duplicates > 0) add(context.getString(R.string.already_saved_count, r.duplicates))
                             if (r.invalid > 0) add(context.getString(R.string.skipped_count, r.invalid))
                         }.joinToString(" · "),

@@ -59,6 +59,20 @@
         <item quantity="one">%d already had one</item>
         <item quantity="other">%d already had one</item>
     </plurals>
+    <string name="create_contacts_title">Not in your contacts</string>
+    <string name="create_contacts_text">These people aren\'t linked to a contact. Link anyone saved under another name, or tick the ones to add as new contacts.</string>
+    <string name="duplicate_of">Already in Wishday as “%1$s”</string>
+    <string name="maybe_contact">Maybe “%1$s” in contacts?</string>
+    <string name="merge">Merge</string>
+    <string name="link">Link</string>
+    <string name="contact_already_linked">That contact is already linked to someone else in Wishday</string>
+    <string name="birthday_only">Birthday only, no number</string>
+    <string name="create_count">Create %1$d</string>
+    <string name="not_now">Not now</string>
+    <plurals name="contacts_created">
+        <item quantity="one">Created %d contact</item>
+        <item quantity="other">Created %d contacts</item>
+    </plurals>
     <plurals name="contacts_not_editable">
         <item quantity="one">%d couldn\'t be edited</item>
         <item quantity="other">%d couldn\'t be edited</item>
@@ -149,6 +163,7 @@
     <string name="export_failed">Export failed: %1$s</string>
     <string name="imported_count">Imported %1$d</string>
     <string name="already_saved_count">%1$d already saved</string>
+    <string name="updated_count">Restored settings for %1$d</string>
     <string name="skipped_count">%1$d skipped</string>
     <string name="import_failed">Import failed: %1$s</string>
     <string name="backup">Backup</string>
@@ -161,6 +176,9 @@
 
     <!-- Editor -->
     <string name="sms_permission_denied">Without SMS permission, Wishday will only remind you</string>
+    <string name="sms_permission_needed">SMS permission is off, so Wishday can\'t text them.</string>
+    <string name="sms_permission_settings">Turn on SMS under Permissions</string>
+    <string name="allow">Allow</string>
     <string name="edit_birthday">Edit birthday</string>
     <string name="mark_important">Mark as important</string>
     <string name="unmark_important">Important (tap to unstar)</string>

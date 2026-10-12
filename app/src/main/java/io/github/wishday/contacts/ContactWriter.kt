@@ -1,5 +1,6 @@
 package io.github.wishday.contacts
 
+import android.content.ContentProviderOperation
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.ContentValues
@@ -7,8 +8,11 @@ import android.content.Context
 import android.net.Uri
 import android.provider.ContactsContract
 import android.provider.ContactsContract.CommonDataKinds.Event
+import android.provider.ContactsContract.CommonDataKinds.Phone
+import android.provider.ContactsContract.CommonDataKinds.StructuredName
 import android.provider.ContactsContract.Contacts
 import android.provider.ContactsContract.Data
+import android.provider.ContactsContract.PhoneLookup
 import android.provider.ContactsContract.RawContacts
 import io.github.wishday.data.Person
 
@@ -42,6 +46,51 @@ class ContactWriter(context: Context) {
         }
         return if (resolver.insert(Data.CONTENT_URI, values) != null) Outcome.ADDED else Outcome.NOT_FOUND
     }
+
+    /** The one contact that has [number], or null when none or several do. */
+    fun findByPhone(number: String): String? =
+        resolver.query(
+            Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number)),
+            arrayOf(PhoneLookup.LOOKUP_KEY),
+            null,
+            null,
+            null,
+        )?.use { c ->
+            val keys = mutableSetOf<String>()
+            while (c.moveToNext()) c.getString(0)?.let { keys += it }
+            keys.singleOrNull()
+        }
+
+    /** Creates a phone contact with [person]'s name, number and birthday; returns its lookup key. */
+    fun createContact(person: Person): String? {
+        val ops = arrayListOf(
+            ContentProviderOperation.newInsert(RawContacts.CONTENT_URI)
+                .withValue(RawContacts.ACCOUNT_TYPE, null)
+                .withValue(RawContacts.ACCOUNT_NAME, null)
+                .build(),
+            dataRow(StructuredName.CONTENT_ITEM_TYPE).withValue(StructuredName.DISPLAY_NAME, person.name).build(),
+            dataRow(Event.CONTENT_ITEM_TYPE)
+                .withValue(Event.TYPE, Event.TYPE_BIRTHDAY)
+                .withValue(Event.START_DATE, startDate(person))
+                .build(),
+        )
+        person.phone?.takeIf { it.isNotBlank() }?.let {
+            ops += dataRow(Phone.CONTENT_ITEM_TYPE).withValue(Phone.NUMBER, it).withValue(Phone.TYPE, Phone.TYPE_MOBILE).build()
+        }
+        val rawUri = resolver.applyBatch(ContactsContract.AUTHORITY, ops).firstOrNull()?.uri ?: return null
+        return resolver.query(
+            Data.CONTENT_URI,
+            arrayOf(Data.LOOKUP_KEY),
+            "${Data.RAW_CONTACT_ID} = ?",
+            arrayOf(ContentUris.parseId(rawUri).toString()),
+            null,
+        )?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+    }
+
+    private fun dataRow(mimeType: String) =
+        ContentProviderOperation.newInsert(Data.CONTENT_URI)
+            .withValueBackReference(Data.RAW_CONTACT_ID, 0)
+            .withValue(Data.MIMETYPE, mimeType)
 
     private fun hasBirthday(contactId: Long): Boolean =
         resolver.query(

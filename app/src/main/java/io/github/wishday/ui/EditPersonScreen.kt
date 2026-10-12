@@ -66,7 +66,7 @@ import androidx.compose.ui.unit.dp
 import io.github.wishday.data.Channel
 import io.github.wishday.data.Person
 import io.github.wishday.messaging.SignalLauncher
-import io.github.wishday.messaging.SmsSender
+import androidx.compose.ui.Alignment
 import java.time.Month
 import java.time.YearMonth
 import java.time.format.TextStyle
@@ -94,6 +94,7 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
     var favorite by rememberSaveable { mutableStateOf(original.favorite) }
     var giftDays by rememberSaveable { mutableStateOf(original.giftReminderDays) }
     var notes by rememberSaveable { mutableStateOf(original.notes.orEmpty()) }
+    var lookupKey by rememberSaveable { mutableStateOf(original.contactLookupKey) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var confirmSms by rememberSaveable { mutableStateOf(false) }
 
@@ -115,6 +116,7 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
         favorite = favorite,
         giftReminderDays = giftDays,
         notes = notes.trim().ifBlank { null },
+        contactLookupKey = lookupKey,
     )
 
     // The system picker grants access to just the chosen number, so no contacts permission is needed.
@@ -141,14 +143,11 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
         }
     }
 
-    val smsPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (!granted) Toast.makeText(context, context.getString(R.string.sms_permission_denied), Toast.LENGTH_LONG).show()
-        vm.save(current()); onDone()
-    }
+    val sms = rememberSmsPermission()
 
     fun save() {
-        if (channel == Channel.SMS && !SmsSender(context).hasPermission()) {
-            smsPermission.launch(Manifest.permission.SEND_SMS)
+        if (channel == Channel.SMS) {
+            sms.request { vm.save(current()); onDone() }
         } else {
             vm.save(current()); onDone()
         }
@@ -246,12 +245,26 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
                 Channel.entries.forEachIndexed { i, c ->
                     SegmentedButton(
                         selected = channel == c,
-                        onClick = { channel = c },
+                        onClick = {
+                            channel = c
+                            if (c == Channel.SMS) sms.request()
+                        },
                         shape = SegmentedButtonDefaults.itemShape(i, Channel.entries.size),
                     ) { Text(stringResource(c.labelRes)) }
                 }
             }
             Text(stringResource(channel.explanationRes), style = MaterialTheme.typography.bodySmall)
+            if (channel == Channel.SMS && !sms.granted) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.sms_permission_needed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { sms.request() }) { Text(stringResource(R.string.allow)) }
+                }
+            }
 
             if (channel != Channel.NONE) {
                 OutlinedTextField(
@@ -271,7 +284,7 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
                     FilledTonalButton(
                         onClick = {
                             if (channel == Channel.SMS) {
-                                confirmSms = true
+                                sms.request { if (it) confirmSms = true }
                             } else {
                                 vm.save(current())
                                 try {
@@ -319,6 +332,7 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
                 showPicker = false
                 phone = contact.phone
                 if (name.isBlank()) name = contact.name
+                lookupKey = contact.lookupKey
             },
         )
     }

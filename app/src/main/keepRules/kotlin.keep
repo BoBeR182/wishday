@@ -1,0 +1,4 @@
+# Kotlin's multifile facades (CollectionsKt, StringsKt, ...) are chains of package-private
+# classes. R8 once moved one link out of kotlin.collections and the app crashed at launch
+# with IllegalAccessError, so keep these classes in their own packages.
+-keeppackagenames kotlin.**

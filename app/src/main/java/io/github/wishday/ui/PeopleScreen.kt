@@ -149,10 +149,15 @@ fun PeopleScreen(
         if (r.notWritten > 0) add(res.getQuantityString(R.plurals.contacts_not_editable, r.notWritten, r.notWritten))
     }.joinToString(" · ")
     var confirmSaveAll by remember { mutableStateOf(false) }
+    var toCreate by remember { mutableStateOf<List<WishdayViewModel.UnlinkedPerson>>(emptyList()) }
     var addNumberFor by remember { mutableStateOf<Person?>(null) }
     val saveAllToContacts: () -> Unit = {
         withContacts(write = true) {
-            scope.launch { snackbar.showSnackbar(contactWriteSummary(vm.writeBirthdaysToContacts())) }
+            scope.launch {
+                val r = vm.writeBirthdaysToContacts()
+                toCreate = r.unlinked
+                snackbar.showSnackbar(contactWriteSummary(r))
+            }
         }
     }
     val askContacts = { withContacts(action = importContacts) }
@@ -262,6 +267,21 @@ fun PeopleScreen(
                 TextButton(onClick = { confirmSaveAll = false; saveAllToContacts() }) { Text(stringResource(R.string.save)) }
             },
             dismissButton = { TextButton(onClick = { confirmSaveAll = false }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+
+    if (toCreate.isNotEmpty()) {
+        CreateContactsDialog(
+            vm,
+            toCreate,
+            onDismiss = { toCreate = emptyList() },
+            onConfirm = { chosen ->
+                toCreate = emptyList()
+                scope.launch {
+                    val created = vm.createContacts(chosen)
+                    snackbar.showSnackbar(res.getQuantityString(R.plurals.contacts_created, created, created))
+                }
+            },
         )
     }
 

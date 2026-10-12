@@ -28,6 +28,12 @@ import io.github.wishday.ui.StatsScreen
 import io.github.wishday.ui.WishdayViewModel
 import io.github.wishday.ui.theme.WishdayTheme
 import io.github.wishday.work.BirthdayWorker
+import androidx.lifecycle.lifecycleScope
+import io.github.wishday.data.AppDatabase
+import io.github.wishday.data.Channel
+import io.github.wishday.messaging.SmsSender
+import io.github.wishday.ui.markSmsAsked
+import kotlinx.coroutines.launch
 
 /** Keeps status/navigation bar icons readable when the app's light/dark mode differs from the system's. */
 @Composable
@@ -44,8 +50,21 @@ private fun SystemBarIcons() {
 
 class MainActivity : ComponentActivity() {
 
-    private val notificationPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    /** Notifications, plus SMS when someone is set to be texted without it (e.g. after a CSV import). */
+    private fun requestStartupPermissions() = lifecycleScope.launch {
+        val wanted = buildList {
+            if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
+            val textsSomeone = AppDatabase.get(this@MainActivity).people().getAll().any { it.channel == Channel.SMS }
+            if (textsSomeone && !SmsSender(this@MainActivity).hasPermission()) {
+                add(Manifest.permission.SEND_SMS)
+                markSmsAsked(this@MainActivity)
+            }
+        }
+        if (wanted.isNotEmpty()) startupPermissions.launch(wanted.toTypedArray())
+    }
+
+    private val startupPermissions =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,9 +72,7 @@ class MainActivity : ComponentActivity() {
 
         Notifications(this).createChannels()
         BirthdayWorker.schedule(this)
-        if (savedInstanceState == null && Build.VERSION.SDK_INT >= 33) {
-            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
+        if (savedInstanceState == null) requestStartupPermissions()
 
         setContent {
             val vm: WishdayViewModel = viewModel()
