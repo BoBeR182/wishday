@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -23,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Contacts
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material3.Button
@@ -39,7 +37,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -67,7 +64,6 @@ fun PeopleScreen(
     onAdd: () -> Unit,
     onEdit: (Long) -> Unit,
     onSettings: () -> Unit,
-    onAbout: () -> Unit,
 ) {
     val people by vm.people.collectAsState()
     val snackbar = remember { SnackbarHostState() }
@@ -115,17 +111,11 @@ fun PeopleScreen(
                 modifier = Modifier.padding(padding),
                 onImport = { contactsPermission.launch(Manifest.permission.READ_CONTACTS) },
                 onAdd = onAdd,
-                onAbout = onAbout,
             )
         } else {
             LazyColumn(modifier = Modifier.padding(padding)) {
                 items(people, key = { it.id }) { person ->
                     PersonRow(person, today, onClick = { onEdit(person.id) })
-                }
-                item {
-                    Box(Modifier.fillMaxWidth().padding(top = 16.dp), contentAlignment = Alignment.Center) {
-                        AboutLink(onAbout)
-                    }
                 }
                 item { Spacer(Modifier.height(88.dp)) } // clear the FAB
             }
@@ -194,7 +184,7 @@ private fun Initial(name: String) {
 }
 
 @Composable
-private fun EmptyState(modifier: Modifier, onImport: () -> Unit, onAdd: () -> Unit, onAbout: () -> Unit) {
+private fun EmptyState(modifier: Modifier, onImport: () -> Unit, onAdd: () -> Unit) {
     Column(
         modifier = modifier.fillMaxSize().padding(32.dp),
         verticalArrangement = Arrangement.Center,
@@ -213,16 +203,5 @@ private fun EmptyState(modifier: Modifier, onImport: () -> Unit, onAdd: () -> Un
         Button(onClick = onImport) { Text("Import from contacts") }
         Spacer(Modifier.height(8.dp))
         OutlinedButton(onClick = onAdd) { Text("Add manually") }
-        Spacer(Modifier.height(24.dp))
-        AboutLink(onAbout)
-    }
-}
-
-@Composable
-private fun AboutLink(onClick: () -> Unit) {
-    TextButton(onClick = onClick) {
-        Icon(Icons.Outlined.Info, contentDescription = null, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(8.dp))
-        Text("About Wishday")
     }
 }

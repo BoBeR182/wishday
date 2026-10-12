@@ -55,7 +55,6 @@ class MainActivity : ComponentActivity() {
                         onAdd = { screen = "edit:new" },
                         onEdit = { screen = "edit:$it" },
                         onSettings = { screen = "settings" },
-                        onAbout = { screen = "about:list" },
                     )
                 }
             }
