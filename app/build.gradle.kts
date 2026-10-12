@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -20,8 +22,27 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Release signing for GitHub APKs. The key lives outside the repo; without it, release
+    // builds are unsigned (F-Droid builds and signs apps itself).
+    val signingFile = file(
+        providers.gradleProperty("wishday.signing").orNull
+            ?: "${System.getProperty("user.home")}/.android-keys/wishday-release.properties",
+    )
+    val releaseSigning = if (signingFile.exists()) {
+        val props = Properties().apply { signingFile.inputStream().use(::load) }
+        signingConfigs.create("release") {
+            storeFile = file(props.getProperty("storeFile"))
+            storePassword = props.getProperty("storePassword")
+            keyAlias = props.getProperty("keyAlias")
+            keyPassword = props.getProperty("keyPassword")
+        }
+    } else {
+        null
+    }
+
     buildTypes {
         release {
+            signingConfig = releaseSigning
             optimization {
                 enable = true
                 packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
@@ -38,6 +59,8 @@ android {
     androidResources {
         // Lists the app's languages (English, Spanish) for Android's per-app language setting.
         generateLocaleConfig = true
+        // Only ship the languages the app itself is translated into.
+        localeFilters += listOf("en", "es")
     }
 }
 
