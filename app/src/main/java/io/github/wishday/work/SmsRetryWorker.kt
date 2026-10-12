@@ -5,6 +5,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import io.github.wishday.R
 import io.github.wishday.data.AppDatabase
 import io.github.wishday.messaging.SmsSender
 import io.github.wishday.notify.Notifications
@@ -17,7 +18,7 @@ class SmsRetryWorker(context: Context, params: WorkerParameters) : CoroutineWork
             ?: return Result.success() // deleted in the meantime
         val message = inputData.getString(KEY_MESSAGE) ?: return Result.success()
         SmsSender(applicationContext).send(person, message, inputData.getInt(KEY_ATTEMPT, 2))
-            .onFailure { Notifications(applicationContext).smsFailed(person, message, it.message ?: "SMS failed") }
+            .onFailure { Notifications(applicationContext).smsFailed(person, message, it.message ?: applicationContext.getString(R.string.sms_failed)) }
         return Result.success()
     }
 

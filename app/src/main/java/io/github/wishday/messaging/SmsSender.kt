@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.telephony.SmsManager
 import androidx.core.content.ContextCompat
+import io.github.wishday.R
 import io.github.wishday.data.Person
 
 /** Sends SMS directly in the background. Requires SEND_SMS. */
@@ -22,8 +23,8 @@ class SmsSender(private val context: Context) {
      * [SmsResultReceiver], which notifies and retries; a failure here means it couldn't even be queued.
      */
     fun send(person: Person, text: String, attempt: Int = 1): Result<Unit> = runCatching {
-        check(hasPermission()) { "SEND_SMS permission not granted" }
-        val phone = checkNotNull(person.phone?.takeIf { it.isNotBlank() }) { "No phone number saved" }
+        check(hasPermission()) { context.getString(R.string.sms_error_no_permission) }
+        val phone = checkNotNull(person.phone?.takeIf { it.isNotBlank() }) { context.getString(R.string.sms_error_no_phone) }
         val sms = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             context.getSystemService(SmsManager::class.java)
         } else {

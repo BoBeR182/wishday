@@ -1,5 +1,7 @@
 package io.github.wishday.birthday
 
+import io.github.wishday.R
+import androidx.annotation.StringRes
 import io.github.wishday.data.Person
 import java.time.LocalDate
 
@@ -55,19 +57,19 @@ data class BirthdayStats(
     }
 }
 
-enum class Zodiac(val symbol: String, val label: String, private val startMonth: Int, private val startDay: Int) {
-    CAPRICORN("♑", "Capricorn", 12, 22),
-    AQUARIUS("♒", "Aquarius", 1, 20),
-    PISCES("♓", "Pisces", 2, 19),
-    ARIES("♈", "Aries", 3, 21),
-    TAURUS("♉", "Taurus", 4, 20),
-    GEMINI("♊", "Gemini", 5, 21),
-    CANCER("♋", "Cancer", 6, 21),
-    LEO("♌", "Leo", 7, 23),
-    VIRGO("♍", "Virgo", 8, 23),
-    LIBRA("♎", "Libra", 9, 23),
-    SCORPIO("♏", "Scorpio", 10, 23),
-    SAGITTARIUS("♐", "Sagittarius", 11, 22);
+enum class Zodiac(val symbol: String, @StringRes val label: Int, private val startMonth: Int, private val startDay: Int) {
+    CAPRICORN("♑", R.string.zodiac_capricorn, 12, 22),
+    AQUARIUS("♒", R.string.zodiac_aquarius, 1, 20),
+    PISCES("♓", R.string.zodiac_pisces, 2, 19),
+    ARIES("♈", R.string.zodiac_aries, 3, 21),
+    TAURUS("♉", R.string.zodiac_taurus, 4, 20),
+    GEMINI("♊", R.string.zodiac_gemini, 5, 21),
+    CANCER("♋", R.string.zodiac_cancer, 6, 21),
+    LEO("♌", R.string.zodiac_leo, 7, 23),
+    VIRGO("♍", R.string.zodiac_virgo, 8, 23),
+    LIBRA("♎", R.string.zodiac_libra, 9, 23),
+    SCORPIO("♏", R.string.zodiac_scorpio, 10, 23),
+    SAGITTARIUS("♐", R.string.zodiac_sagittarius, 11, 22);
 
     companion object {
         fun of(month: Int, day: Int): Zodiac {

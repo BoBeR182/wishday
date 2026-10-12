@@ -1,0 +1,13 @@
+Wishday recuerda los cumpleaños y te ayuda a enviar el mensaje.
+
+<ul>
+<li>Importa cumpleaños de tus contactos o de una copia de Birday, o añádelos a mano</li>
+<li>SMS automático: Wishday envía el mensaje a la hora que elijas y lo reintenta si falla</li>
+<li>Signal, Molly o WhatsApp: una notificación abre el chat con el mensaje listo, solo tienes que tocar enviar</li>
+<li>Marca a las personas importantes y recibe un recordatorio de regalo con antelación, con tus ideas</li>
+<li>Estadísticas: cumpleaños por mes, cumpleaños especiales próximos, gemelos de cumpleaños y signos del zodiaco</li>
+<li>Vincula personas con tus contactos y guarda sus cumpleaños en tus contactos</li>
+<li>Plantillas de mensaje con {name}, {fullname} y {age}</li>
+<li>Temas de color, modo claro y oscuro, en inglés y español</li>
+<li>Sin permiso de internet ni rastreo; todo se queda en tu teléfono</li>
+</ul>

@@ -1,9 +1,14 @@
 package io.github.wishday.ui
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import io.github.wishday.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import io.github.wishday.ui.theme.LocalIsDark
+import io.github.wishday.ui.theme.LocalPalette
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -61,16 +66,16 @@ fun StatsScreen(vm: WishdayViewModel, onDone: () -> Unit, onOpen: (Long) -> Unit
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Stats") },
+                title = { Text(stringResource(R.string.stats)) },
                 navigationIcon = {
-                    IconButton(onClick = onDone) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                    IconButton(onClick = onDone) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
                 },
             )
         },
     ) { padding ->
         if (stats.total == 0) {
             Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Add some birthdays to see stats", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.add_birthdays_for_stats), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             return@Scaffold
         }
@@ -79,31 +84,35 @@ fun StatsScreen(vm: WishdayViewModel, onDone: () -> Unit, onOpen: (Long) -> Unit
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatTile("People", stats.total.toString(), Modifier.weight(1f))
-                StatTile("This month", stats.thisMonth.toString(), Modifier.weight(1f))
+                StatTile(stringResource(R.string.stat_people), stats.total.toString(), Modifier.weight(1f))
+                StatTile(stringResource(R.string.stat_this_month), stats.thisMonth.toString(), Modifier.weight(1f))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatTile("Next 30 days", stats.next30Days.toString(), Modifier.weight(1f))
+                StatTile(stringResource(R.string.stat_next_30), stats.next30Days.toString(), Modifier.weight(1f))
                 StatTile(
-                    "Average age",
+                    stringResource(R.string.stat_average_age),
                     stats.averageAge?.let { "%.0f".format(it) } ?: "–",
                     Modifier.weight(1f),
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatTile("Important ⭐", stats.important.toString(), Modifier.weight(1f))
-                StatTile("Gift reminders 🎁", stats.withGiftReminder.toString(), Modifier.weight(1f))
+                StatTile(stringResource(R.string.stat_important), stats.important.toString(), Modifier.weight(1f))
+                StatTile(stringResource(R.string.stat_gift_reminders), stats.withGiftReminder.toString(), Modifier.weight(1f))
             }
 
-            Section("Birthdays by month") { MonthChart(stats, today) }
+            Section(stringResource(R.string.stats_by_month)) { MonthChart(stats, today) }
 
             if (stats.milestones.isNotEmpty()) {
-                Section("Big birthdays coming up") {
+                Section(stringResource(R.string.stats_milestones)) {
                     stats.milestones.forEach { (person, age) ->
                         val days = Birthdays.daysUntil(person, today)
                         PersonLine(
-                            person, "turns $age",
-                            if (days == 0L) "today 🎂" else if (days == 1L) "tomorrow" else "in $days days",
+                            person, stringResource(R.string.turns_age, age),
+                            when (days) {
+                                0L -> stringResource(R.string.today_cake)
+                                1L -> stringResource(R.string.when_tomorrow)
+                                else -> pluralStringResource(R.plurals.when_in_days, days.toInt(), days.toInt())
+                            },
                             onOpen,
                         )
                     }
@@ -111,14 +120,20 @@ fun StatsScreen(vm: WishdayViewModel, onDone: () -> Unit, onOpen: (Long) -> Unit
             }
 
             if (stats.youngest != null && stats.oldest != null && stats.youngest != stats.oldest) {
-                Section("Youngest & oldest") {
-                    PersonLine(stats.youngest, "youngest", "turns ${Birthdays.ageTurning(stats.youngest, today)}", onOpen)
-                    PersonLine(stats.oldest, "oldest", "turns ${Birthdays.ageTurning(stats.oldest, today)}", onOpen)
+                Section(stringResource(R.string.stats_youngest_oldest)) {
+                    PersonLine(
+                        stats.youngest, stringResource(R.string.youngest),
+                        stringResource(R.string.turns_age, Birthdays.ageTurning(stats.youngest, today)!!), onOpen,
+                    )
+                    PersonLine(
+                        stats.oldest, stringResource(R.string.oldest),
+                        stringResource(R.string.turns_age, Birthdays.ageTurning(stats.oldest, today)!!), onOpen,
+                    )
                 }
             }
 
             if (stats.twins.isNotEmpty()) {
-                Section("Birthday twins") {
+                Section(stringResource(R.string.stats_twins)) {
                     stats.twins.forEach { group ->
                         Text(
                             "${shortDate(group.first())} · ${group.joinToString(", ") { it.name }}",
@@ -129,12 +144,12 @@ fun StatsScreen(vm: WishdayViewModel, onDone: () -> Unit, onOpen: (Long) -> Unit
                 }
             }
 
-            Section("Star signs") {
+            Section(stringResource(R.string.stats_star_signs)) {
                 stats.zodiac.chunked(2).forEach { row ->
                     Row(Modifier.padding(vertical = 4.dp)) {
                         row.forEach { (sign, count) ->
                             Text(
-                                "${sign.symbol}  ${sign.label}",
+                                "${sign.symbol}  ${stringResource(sign.label)}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.weight(1f),
                             )
@@ -189,24 +204,34 @@ private fun Section(title: String, content: @Composable () -> Unit) {
  */
 @Composable
 private fun MonthChart(stats: BirthdayStats, today: LocalDate) {
-    val dark = isSystemInDarkTheme()
-    // Validated against each theme's card surface (lightness band, contrast, color-blind separation).
-    val barColor = if (dark) Color(0xFF9A5FD6) else Color(0xFF7B2CBF)
-    val nowColor = if (dark) Color(0xFFE0684A) else Color(0xFFE8603F)
+    val dark = LocalIsDark.current
+    val palette = LocalPalette.current
+    // Each theme's pair was validated against its card surface (lightness band, contrast, color-blind separation).
+    val barColor = if (dark) palette.chartBarDark else palette.chartBarLight
+    val nowColor = if (dark) palette.chartNowDark else palette.chartNowLight
     val locale = LocalConfiguration.current.locales[0]
     val current = today.monthValue
     var selected by rememberSaveable { mutableStateOf<Int?>(null) }
     val max = stats.byMonth.max().coerceAtLeast(1)
 
-    fun monthName(m: Int, style: TextStyle = TextStyle.FULL) = Month.of(m).getDisplayName(style, locale)
-    fun countText(n: Int) = if (n == 1) "1 birthday" else "$n birthdays"
+    val res = LocalContext.current.resources
+    fun monthName(m: Int, style: TextStyle = TextStyle.FULL) =
+        Month.of(m).getDisplayName(style, locale).replaceFirstChar { it.titlecase(locale) }
+    fun countText(n: Int) = res.getQuantityString(R.plurals.birthdays_count, n, n)
 
-    val caption = selected?.let { "${monthName(it)}: ${countText(stats.byMonth[it - 1])}" }
+    val caption = selected?.let { res.getString(R.string.chart_month_count, monthName(it), countText(stats.byMonth[it - 1])) }
         ?: when (stats.busiestMonths.size) {
             0 -> ""
-            1 -> "Busiest: ${monthName(stats.busiestMonths[0])} (${countText(stats.byMonth[stats.busiestMonths[0] - 1])})"
-            else -> "Busiest: ${stats.busiestMonths.joinToString(" & ") { monthName(it, TextStyle.SHORT) }} " +
-                "(${stats.byMonth[stats.busiestMonths[0] - 1]} each)"
+            1 -> res.getString(
+                R.string.chart_busiest,
+                monthName(stats.busiestMonths[0]),
+                countText(stats.byMonth[stats.busiestMonths[0] - 1]),
+            )
+            else -> {
+                val each = stats.byMonth[stats.busiestMonths[0] - 1]
+                val months = stats.busiestMonths.joinToString(res.getString(R.string.and_separator)) { monthName(it, TextStyle.SHORT) }
+                res.getQuantityString(R.plurals.chart_busiest_tie, each, each, months)
+            }
         }
     Text(caption, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     Spacer(Modifier.height(12.dp))
@@ -227,7 +252,7 @@ private fun MonthChart(stats: BirthdayStats, today: LocalDate) {
                     .fillMaxHeight()
                     // The whole column is the tap target, not just the bar.
                     .clickable { selected = if (selected == m) null else m }
-                    .semantics { contentDescription = "${monthName(m)}: ${countText(count)}" },
+                    .semantics { contentDescription = res.getString(R.string.chart_month_count, monthName(m), countText(count)) },
             ) {
                 // Direct labels only where they matter: the busiest month(s) and the selected one.
                 // Every column reserves the same label slot so bar heights stay comparable.
@@ -271,7 +296,7 @@ private fun MonthChart(stats: BirthdayStats, today: LocalDate) {
         Box(Modifier.size(10.dp).clip(RoundedCornerShape(2.dp)).background(nowColor))
         Spacer(Modifier.width(6.dp))
         Text(
-            "This month (${monthName(current)})  ·  tap a bar for its count",
+            stringResource(R.string.chart_legend, monthName(current)),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -303,5 +328,5 @@ private fun PersonLine(person: Person, label: String, detail: String, onOpen: (L
 @Composable
 private fun shortDate(person: Person): String {
     val locale = LocalConfiguration.current.locales[0]
-    return "${Month.of(person.month).getDisplayName(TextStyle.SHORT, locale)} ${person.day}"
+    return stringResource(R.string.short_date, Month.of(person.month).getDisplayName(TextStyle.SHORT, locale), person.day)
 }

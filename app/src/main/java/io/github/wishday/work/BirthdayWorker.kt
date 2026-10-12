@@ -7,6 +7,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import io.github.wishday.R
 import io.github.wishday.birthday.Birthdays
 import io.github.wishday.data.AppDatabase
 import io.github.wishday.data.Channel
@@ -56,12 +57,12 @@ class BirthdayWorker(context: Context, params: WorkerParameters) : CoroutineWork
         when (person.channel) {
             Channel.SMS -> {
                 if (person.phone.isNullOrBlank()) {
-                    notifications.todayReminder(person, "No phone number saved, so no SMS was sent.")
+                    notifications.todayReminder(person, applicationContext.getString(R.string.notif_no_phone_no_sms))
                     return
                 }
                 // Success is confirmed (or retried) by SmsResultReceiver once the network answers.
                 sms.send(person, message)
-                    .onFailure { notifications.smsFailed(person, message, it.message ?: "SMS failed") }
+                    .onFailure { notifications.smsFailed(person, message, it.message ?: applicationContext.getString(R.string.sms_failed)) }
             }
             Channel.SIGNAL -> notifications.signalPrompt(person, message)
             Channel.WHATSAPP -> notifications.whatsAppPrompt(person, message)

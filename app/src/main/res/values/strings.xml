@@ -1,3 +1,293 @@
 <resources>
     <string name="app_name">Wishday</string>
+
+    <!-- Notifications -->
+    <string name="channel_today">Birthdays today</string>
+    <string name="channel_upcoming">Upcoming birthdays</string>
+    <string name="channel_sent">Sent messages</string>
+    <string name="notif_birthday_today">🎂 It\'s %1$s\'s birthday</string>
+    <string name="notif_tap_to_send">Tap to send on %1$s: %2$s</string>
+    <string name="notif_dont_forget">Don\'t forget to say happy birthday!</string>
+    <string name="notif_no_phone_no_sms">No phone number saved, so no SMS was sent.</string>
+    <string name="when_tomorrow">tomorrow</string>
+    <plurals name="when_in_days">
+        <item quantity="one">in %d day</item>
+        <item quantity="other">in %d days</item>
+    </plurals>
+    <plurals name="when_in_weeks">
+        <item quantity="one">in %d week</item>
+        <item quantity="other">in %d weeks</item>
+    </plurals>
+    <string name="notif_gift_title">🎁 %1$s\'s birthday is %2$s</string>
+    <string name="notif_gift_ideas">Gift ideas: %1$s</string>
+    <string name="notif_gift_default">Time to think about a gift.</string>
+    <string name="notif_upcoming_title">%1$s\'s birthday is %2$s</string>
+    <string name="notif_notes">Notes: %1$s</string>
+    <string name="notif_upcoming_default">Wishday will remind you on the day.</string>
+    <string name="notif_sms_sent">Sent birthday SMS to %1$s</string>
+    <string name="notif_sms_retry_title">Couldn\'t text %1$s yet</string>
+    <plurals name="notif_sms_retry_text">
+        <item quantity="one">%2$s. Trying again in %1$d minute.</item>
+        <item quantity="other">%2$s. Trying again in %1$d minutes.</item>
+    </plurals>
+    <string name="notif_sms_failed_title">Couldn\'t text %1$s</string>
+    <string name="notif_sms_failed_text">%1$s. Tap to send it yourself.</string>
+    <string name="sms_failed">SMS failed</string>
+    <string name="sms_error_no_service">No mobile service</string>
+    <string name="sms_error_radio_off">Mobile network is off (airplane mode?)</string>
+    <string name="sms_error_limit">Too many messages sent recently</string>
+    <string name="sms_error_network">The network rejected it (error %1$d)</string>
+    <string name="sms_error_no_permission">SMS permission not granted</string>
+    <string name="sms_error_no_phone">No phone number saved</string>
+    <string name="default_message">Happy birthday, {name}! 🎉 Hope you have a great day.</string>
+
+    <!-- Home -->
+    <string name="home_date_pattern">EEEE, MMMM d</string>
+    <string name="short_date">%1$s %2$d</string>
+    <string name="contacts_none_new">No new birthdays found in contacts</string>
+    <plurals name="contacts_imported">
+        <item quantity="one">Imported %d birthday</item>
+        <item quantity="other">Imported %d birthdays</item>
+    </plurals>
+    <string name="match_none">No new matches: everyone either has a number or no single contact fits</string>
+    <string name="contacts_permission_needed">Contacts permission is needed for that</string>
+    <plurals name="contacts_birthdays_added">
+        <item quantity="one">Added %d birthday to contacts</item>
+        <item quantity="other">Added %d birthdays to contacts</item>
+    </plurals>
+    <plurals name="contacts_already_had">
+        <item quantity="one">%d already had one</item>
+        <item quantity="other">%d already had one</item>
+    </plurals>
+    <plurals name="contacts_not_editable">
+        <item quantity="one">%d couldn\'t be edited</item>
+        <item quantity="other">%d couldn\'t be edited</item>
+    </plurals>
+    <string name="quick_add">Quick add</string>
+    <string name="coming_up">Coming up</string>
+    <plurals name="linked_count">
+        <item quantity="one">Linked %d</item>
+        <item quantity="other">Linked %d</item>
+    </plurals>
+    <plurals name="linked_choose_channel">
+        <item quantity="one">Linked %d to contacts. Tap someone to choose SMS or Signal.</item>
+        <item quantity="other">Linked %d to contacts. Tap someone to choose SMS or Signal.</item>
+    </plurals>
+    <string name="number_added">Added %1$s for %2$s</string>
+    <string name="save_to_contacts_title">Save birthdays to contacts?</string>
+    <string name="save_to_contacts_text">Adds each linked person\'s birthday to their contact. Contacts that already have a birthday are left alone, and nothing is deleted.</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="contacts">Contacts</string>
+    <string name="menu_import_contacts">Import birthdays from contacts</string>
+    <string name="menu_match_contacts">Match people to contacts</string>
+    <string name="menu_save_to_contacts">Save birthdays to contacts</string>
+    <string name="stats">Stats</string>
+    <string name="settings">Settings</string>
+    <string name="today_label">🎉 TODAY</string>
+    <string name="up_next">UP NEXT</string>
+    <plurals name="birthdays_count">
+        <item quantity="one">%d birthday</item>
+        <item quantity="other">%d birthdays</item>
+    </plurals>
+    <string name="turns_age">turns %1$d</string>
+    <string name="wish_person">Wish %1$s</string>
+    <string name="whatsapp">WhatsApp</string>
+    <string name="quick_text">Text</string>
+    <string name="quick_call">Call</string>
+    <string name="quick_add_number">Add number</string>
+    <string name="quick_share">Share</string>
+    <plurals name="days_unit">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
+    <string name="tomorrow">Tomorrow</string>
+    <plurals name="days_count">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <string name="channel_sends_sms">Sends SMS</string>
+    <string name="no_birthdays_yet">No birthdays yet</string>
+    <string name="empty_hint">Import them from your contacts or a Birday backup (Settings → Backup), or add them by hand.</string>
+    <string name="import_from_contacts">Import from contacts</string>
+    <string name="no_app_found">No app found for that</string>
+
+    <!-- Quick add -->
+    <string name="name">Name</string>
+    <string name="day">Day</string>
+    <string name="month">Month</string>
+    <string name="year">Year</string>
+    <string name="year_optional_short">opt.</string>
+    <string name="more_options">More options</string>
+    <string name="add_birthday">Add birthday</string>
+
+    <!-- Contact picker -->
+    <string name="choose_contact">Choose a contact</string>
+    <string name="search_name_or_number">Search by name or number</string>
+    <string name="no_phone_contacts">No contacts with phone numbers</string>
+    <string name="no_contacts_match">No contacts match \"%1$s\"</string>
+
+    <!-- Settings -->
+    <string name="back">Back</string>
+    <string name="default_message_label">Default message</string>
+    <string name="placeholders_help">{name} first name · {fullname} full name · {age} age they turn</string>
+    <string name="send_time">Send time</string>
+    <string name="send_time_help">When SMS go out and today\'s reminders appear</string>
+    <string name="advance_reminder">Advance reminder</string>
+    <string name="off">Off</string>
+    <plurals name="days_before">
+        <item quantity="one">%d day before</item>
+        <item quantity="other">%d days before</item>
+    </plurals>
+    <string name="about_wishday">About Wishday</string>
+    <string name="about_wishday_help">Version, privacy, license and source code</string>
+    <string name="ok">OK</string>
+    <plurals name="exported_count">
+        <item quantity="one">Exported %d birthday</item>
+        <item quantity="other">Exported %d birthdays</item>
+    </plurals>
+    <string name="export_failed">Export failed: %1$s</string>
+    <string name="imported_count">Imported %1$d</string>
+    <string name="already_saved_count">%1$d already saved</string>
+    <string name="skipped_count">%1$d skipped</string>
+    <string name="import_failed">Import failed: %1$s</string>
+    <string name="backup">Backup</string>
+    <string name="export_birthdays">Export birthdays</string>
+    <string name="export_birthdays_help">Save everyone to a CSV file you can keep or open in a spreadsheet</string>
+    <string name="import_birthdays">Import birthdays</string>
+    <string name="import_birthdays_help">From a Birday backup, a Wishday export, or any CSV with name and birthday columns</string>
+    <string name="about_signal">About Signal</string>
+    <string name="about_signal_text">Signal doesn\'t let other apps send messages on your behalf, so Wishday prepares the message and opens Signal for you — you just tap send. SMS can be sent fully automatically.</string>
+
+    <!-- Editor -->
+    <string name="sms_permission_denied">Without SMS permission, Wishday will only remind you</string>
+    <string name="edit_birthday">Edit birthday</string>
+    <string name="mark_important">Mark as important</string>
+    <string name="unmark_important">Important (tap to unstar)</string>
+    <string name="delete">Delete</string>
+    <string name="year_optional">optional</string>
+    <string name="phone_number">Phone number</string>
+    <string name="phone_needed">Needed to send messages</string>
+    <string name="pick_from_contacts">Pick from contacts</string>
+    <string name="gift_reminder">Gift reminder</string>
+    <string name="gift_reminder_help">An extra heads-up ahead of time, so there\'s time to get something.</string>
+    <string name="gift_3_days">3 days</string>
+    <string name="gift_1_week">1 week</string>
+    <string name="gift_2_weeks">2 weeks</string>
+    <string name="gift_1_month">1 month</string>
+    <string name="gift_notes">Gift ideas &amp; notes</string>
+    <string name="gift_notes_placeholder">Likes coffee, wants a new book…</string>
+    <string name="gift_notes_help">Shown in their reminders</string>
+    <string name="on_their_birthday">On their birthday</string>
+    <string name="custom_message">Custom message</string>
+    <string name="custom_message_help">Leave blank to use the default. {name}, {fullname} and {age} are filled in.</string>
+    <string name="preview">Preview</string>
+    <string name="app_not_installed">That app isn\'t installed</string>
+    <string name="send_sms_now">Send SMS now</string>
+    <string name="open_in_app_now">Open in %1$s now</string>
+    <string name="share_message_now">Share message now</string>
+    <string name="delete_person_title">Delete %1$s?</string>
+    <string name="text_now_title">Text %1$s now?</string>
+    <string name="sending">Sending…</string>
+    <string name="couldnt_send">Couldn\'t send: %1$s</string>
+    <string name="send">Send</string>
+    <string name="channel_remind">Remind</string>
+    <string name="channel_sms">SMS</string>
+    <string name="channel_remind_help">You\'ll get a notification; Wishday won\'t send anything.</string>
+    <string name="channel_sms_help">Wishday texts them automatically at your send time.</string>
+    <string name="channel_signal_help">You\'ll get a notification that opens Signal with the message ready — just tap send.</string>
+    <string name="channel_whatsapp_help">You\'ll get a notification that opens WhatsApp with the message ready — just tap send.</string>
+    <string name="channel_signal">Signal</string>
+
+    <!-- Stats -->
+    <string name="add_birthdays_for_stats">Add some birthdays to see stats</string>
+    <string name="stat_people">People</string>
+    <string name="stat_this_month">This month</string>
+    <string name="stat_next_30">Next 30 days</string>
+    <string name="stat_average_age">Average age</string>
+    <string name="stat_important">Important ⭐</string>
+    <string name="stat_gift_reminders">Gift reminders 🎁</string>
+    <string name="stats_by_month">Birthdays by month</string>
+    <string name="stats_milestones">Big birthdays coming up</string>
+    <string name="today_cake">today 🎂</string>
+    <string name="stats_youngest_oldest">Youngest &amp; oldest</string>
+    <string name="youngest">youngest</string>
+    <string name="oldest">oldest</string>
+    <string name="stats_twins">Birthday twins</string>
+    <string name="stats_star_signs">Star signs</string>
+    <string name="chart_month_count">%1$s: %2$s</string>
+    <string name="chart_busiest">Busiest: %1$s (%2$s)</string>
+    <plurals name="chart_busiest_tie">
+        <item quantity="one">Busiest: %2$s (%1$d each)</item>
+        <item quantity="other">Busiest: %2$s (%1$d each)</item>
+    </plurals>
+    <string name="chart_legend">This month (%1$s)  ·  tap a bar for its count</string>
+    <string name="and_separator"> &amp; </string>
+    <string name="zodiac_capricorn">Capricorn</string>
+    <string name="zodiac_aquarius">Aquarius</string>
+    <string name="zodiac_pisces">Pisces</string>
+    <string name="zodiac_aries">Aries</string>
+    <string name="zodiac_taurus">Taurus</string>
+    <string name="zodiac_gemini">Gemini</string>
+    <string name="zodiac_cancer">Cancer</string>
+    <string name="zodiac_leo">Leo</string>
+    <string name="zodiac_virgo">Virgo</string>
+    <string name="zodiac_libra">Libra</string>
+    <string name="zodiac_scorpio">Scorpio</string>
+    <string name="zodiac_sagittarius">Sagittarius</string>
+
+    <!-- About -->
+    <string name="about">About</string>
+    <string name="version">Version %1$s</string>
+    <string name="about_description">Remembers birthdays and helps you wish people a happy birthday, automatically by SMS or with one tap on Signal or WhatsApp.</string>
+    <string name="made_by">Made by Daniel Stuckless</string>
+    <string name="private_by_design">Private by design</string>
+    <string name="private_by_design_text">No internet access, no accounts, no tracking. Your birthdays never leave this phone unless you export them.</string>
+    <string name="source_code">Source code</string>
+    <string name="source_code_text">Free and open source on GitHub</string>
+    <string name="report_problem">Report a problem or suggest a feature</string>
+    <string name="report_problem_text">Opens GitHub issues</string>
+    <string name="license">License</string>
+    <string name="license_text">GNU General Public License v3.0 or later</string>
+    <string name="inspired_by_birday">Inspired by Birday</string>
+    <string name="inspired_by_birday_text">A lovely open-source birthday app</string>
+    <string name="no_browser">No browser installed</string>
+
+    <!-- Contact match review -->
+    <string name="close">Close</string>
+    <string name="match_with_contacts">Match with contacts</string>
+    <string name="undo">Undo</string>
+    <string name="match_progress">%1$d of %2$d · %3$d linked</string>
+    <string name="match_done_progress">%1$d of %2$d linked</string>
+    <string name="match_also_birthday">Also add their birthday to the contact</string>
+    <string name="match_question">Is this the right contact? Swipe or tap.</string>
+    <string name="no">No</string>
+    <string name="yes">Yes</string>
+    <string name="save_count">Save %1$d</string>
+    <string name="in_wishday">In Wishday</string>
+    <string name="contact">Contact</string>
+    <string name="stamp_yes">YES</string>
+    <string name="stamp_no">NO</string>
+    <string name="no_changes">No changes</string>
+    <string name="all_done">All done</string>
+    <string name="nobody_linked">Nobody was linked.</string>
+    <plurals name="people_get_number">
+        <item quantity="one">%d person will get their phone number.</item>
+        <item quantity="other">%d people will get their phone number.</item>
+    </plurals>
+    <string name="language">Language</string>
+    <string name="language_help">English or Spanish; follows your phone by default</string>
+
+    <!-- Themes -->
+    <string name="appearance">Appearance</string>
+    <string name="theme">Theme</string>
+    <string name="theme_sunset">Sunset</string>
+    <string name="theme_ocean">Ocean</string>
+    <string name="theme_forest">Forest</string>
+    <string name="theme_berry">Berry</string>
+    <string name="theme_midnight">Midnight</string>
+    <string name="theme_wallpaper">Wallpaper</string>
+    <string name="mode_system">System</string>
+    <string name="mode_light">Light</string>
+    <string name="mode_dark">Dark</string>
 </resources>

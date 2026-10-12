@@ -19,8 +19,10 @@ import io.github.wishday.data.Settings
 import io.github.wishday.messaging.SignalLauncher
 import io.github.wishday.messaging.SmsSender
 import io.github.wishday.messaging.WhatsAppLauncher
+import io.github.wishday.ui.theme.DarkMode
 import io.github.wishday.work.BirthdayWorker
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -33,6 +35,23 @@ import java.time.LocalDate
 class WishdayViewModel(app: Application) : AndroidViewModel(app) {
     private val dao = AppDatabase.get(app).people()
     val settings = Settings(app)
+
+    data class Appearance(val themeId: String, val darkMode: DarkMode)
+
+    private val _appearance = MutableStateFlow(
+        Appearance(settings.themeId, runCatching { DarkMode.valueOf(settings.darkMode) }.getOrDefault(DarkMode.SYSTEM)),
+    )
+    val appearance: StateFlow<Appearance> = _appearance
+
+    fun setTheme(id: String) {
+        settings.themeId = id
+        _appearance.value = _appearance.value.copy(themeId = id)
+    }
+
+    fun setDarkMode(mode: DarkMode) {
+        settings.darkMode = mode.name
+        _appearance.value = _appearance.value.copy(darkMode = mode)
+    }
 
     /** Everyone, soonest birthday first. */
     val people: StateFlow<List<Person>> = dao.observeAll()
@@ -161,7 +180,7 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun updateSettings(message: String, hour: Int, minute: Int, daysBefore: Int) {
-        settings.defaultMessage = message.ifBlank { Settings.DEFAULT_MESSAGE }
+        settings.defaultMessage = message
         settings.sendHour = hour
         settings.sendMinute = minute
         settings.remindDaysBefore = daysBefore

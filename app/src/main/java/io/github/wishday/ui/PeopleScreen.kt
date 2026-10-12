@@ -1,5 +1,8 @@
 package io.github.wishday.ui
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import io.github.wishday.R
 import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -12,7 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import io.github.wishday.ui.theme.LocalIsDark
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -86,7 +89,7 @@ import io.github.wishday.data.Person
 import io.github.wishday.messaging.SignalLauncher
 import io.github.wishday.messaging.WhatsAppLauncher
 import io.github.wishday.ui.theme.AvatarGradients
-import io.github.wishday.ui.theme.BrandGradient
+import io.github.wishday.ui.theme.LocalPalette
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.Month
@@ -102,6 +105,7 @@ fun PeopleScreen(
     onStats: () -> Unit,
 ) {
     val people by vm.people.collectAsState()
+    val res = LocalContext.current.resources
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val today = LocalDate.now()
@@ -111,7 +115,8 @@ fun PeopleScreen(
         scope.launch {
             val added = vm.importContacts()
             snackbar.showSnackbar(
-                if (added == 0) "No new birthdays found in contacts" else "Imported $added birthdays",
+                if (added == 0) res.getString(R.string.contacts_none_new)
+                else res.getQuantityString(R.plurals.contacts_imported, added, added),
             )
         }
     }
@@ -119,7 +124,7 @@ fun PeopleScreen(
     val findMatches: () -> Unit = {
         scope.launch {
             val found = vm.findContactMatches()
-            if (found.isEmpty()) snackbar.showSnackbar("No new matches: everyone either has a number or no single contact fits")
+            if (found.isEmpty()) snackbar.showSnackbar(res.getString(R.string.match_none))
             else matches = found
         }
     }
@@ -128,7 +133,7 @@ fun PeopleScreen(
     var afterPermission by remember { mutableStateOf<(() -> Unit)?>(null) }
     val contactsPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         if (result.values.all { it }) afterPermission?.invoke()
-        else scope.launch { snackbar.showSnackbar("Contacts permission is needed for that") }
+        else scope.launch { snackbar.showSnackbar(res.getString(R.string.contacts_permission_needed)) }
         afterPermission = null
     }
     fun withContacts(write: Boolean = false, action: () -> Unit) {
@@ -139,9 +144,9 @@ fun PeopleScreen(
         )
     }
     fun contactWriteSummary(r: WishdayViewModel.ContactWriteResult) = buildList {
-        add("Added ${r.added} ${if (r.added == 1) "birthday" else "birthdays"} to contacts")
-        if (r.alreadyHad > 0) add("${r.alreadyHad} already had one")
-        if (r.notWritten > 0) add("${r.notWritten} couldn't be edited")
+        add(res.getQuantityString(R.plurals.contacts_birthdays_added, r.added, r.added))
+        if (r.alreadyHad > 0) add(res.getQuantityString(R.plurals.contacts_already_had, r.alreadyHad, r.alreadyHad))
+        if (r.notWritten > 0) add(res.getQuantityString(R.plurals.contacts_not_editable, r.notWritten, r.notWritten))
     }.joinToString(" · ")
     var confirmSaveAll by remember { mutableStateOf(false) }
     var addNumberFor by remember { mutableStateOf<Person?>(null) }
@@ -166,7 +171,7 @@ fun PeopleScreen(
             ExtendedFloatingActionButton(
                 onClick = { quickAdd = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Quick add") },
+                text = { Text(stringResource(R.string.quick_add)) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.navigationBarsPadding(),
@@ -194,7 +199,7 @@ fun PeopleScreen(
             } else if (rest.isNotEmpty()) {
                 item {
                     Text(
-                        "Coming up",
+                        stringResource(R.string.coming_up),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 8.dp),
@@ -219,11 +224,14 @@ fun PeopleScreen(
                         withContacts(write = true) {
                             scope.launch {
                                 val r = vm.writeBirthdaysToContacts(linked)
-                                snackbar.showSnackbar("Linked ${linked.size} · ${contactWriteSummary(r)}")
+                                snackbar.showSnackbar(
+                                    res.getQuantityString(R.plurals.linked_count, linked.size, linked.size) +
+                                        " · " + contactWriteSummary(r),
+                                )
                             }
                         }
                     } else {
-                        snackbar.showSnackbar("Linked ${linked.size} to contacts. Tap someone to choose SMS or Signal.")
+                        snackbar.showSnackbar(res.getQuantityString(R.plurals.linked_choose_channel, linked.size, linked.size))
                     }
                 }
             },
@@ -238,7 +246,7 @@ fun PeopleScreen(
             onPick = { contact ->
                 addNumberFor = null
                 vm.save(person.copy(phone = contact.phone))
-                scope.launch { snackbar.showSnackbar("Added ${contact.phone} for ${person.name}") }
+                scope.launch { snackbar.showSnackbar(res.getString(R.string.number_added, contact.phone, person.name)) }
             },
         )
     }
@@ -246,17 +254,14 @@ fun PeopleScreen(
     if (confirmSaveAll) {
         AlertDialog(
             onDismissRequest = { confirmSaveAll = false },
-            title = { Text("Save birthdays to contacts?") },
+            title = { Text(stringResource(R.string.save_to_contacts_title)) },
             text = {
-                Text(
-                    "Adds each linked person's birthday to their contact. Contacts that already have a " +
-                        "birthday are left alone, and nothing is deleted.",
-                )
+                Text(stringResource(R.string.save_to_contacts_text))
             },
             confirmButton = {
-                TextButton(onClick = { confirmSaveAll = false; saveAllToContacts() }) { Text("Save") }
+                TextButton(onClick = { confirmSaveAll = false; saveAllToContacts() }) { Text(stringResource(R.string.save)) }
             },
-            dismissButton = { TextButton(onClick = { confirmSaveAll = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmSaveAll = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 
@@ -276,7 +281,7 @@ fun PeopleScreen(
 @Composable
 private fun LightStatusBarIcons() {
     val activity = LocalActivity.current ?: return
-    val dark = isSystemInDarkTheme()
+    val dark = LocalIsDark.current
     DisposableEffect(activity, dark) {
         val controller = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
         controller.isAppearanceLightStatusBars = false
@@ -302,13 +307,13 @@ private fun Header(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
-            .background(BrandGradient)
+            .background(LocalPalette.current.brush)
             .statusBarsPadding()
             .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 24.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "Wishday",
+                stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
@@ -316,32 +321,33 @@ private fun Header(
             )
             Box {
                 IconButton(onClick = { menu = true }) {
-                    Icon(Icons.Default.Contacts, contentDescription = "Contacts", tint = Color.White)
+                    Icon(Icons.Default.Contacts, contentDescription = stringResource(R.string.contacts), tint = Color.White)
                 }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     DropdownMenuItem(
-                        text = { Text("Import birthdays from contacts") },
+                        text = { Text(stringResource(R.string.menu_import_contacts)) },
                         onClick = { menu = false; onImport() },
                     )
                     DropdownMenuItem(
-                        text = { Text("Match people to contacts") },
+                        text = { Text(stringResource(R.string.menu_match_contacts)) },
                         onClick = { menu = false; onMatch() },
                     )
                     DropdownMenuItem(
-                        text = { Text("Save birthdays to contacts") },
+                        text = { Text(stringResource(R.string.menu_save_to_contacts)) },
                         onClick = { menu = false; onSaveToContacts() },
                     )
                 }
             }
             IconButton(onClick = onStats) {
-                Icon(Icons.Default.BarChart, contentDescription = "Stats", tint = Color.White)
+                Icon(Icons.Default.BarChart, contentDescription = stringResource(R.string.stats), tint = Color.White)
             }
             IconButton(onClick = onSettings) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
+                Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings), tint = Color.White)
             }
         }
         Text(
-            today.format(java.time.format.DateTimeFormatter.ofPattern("EEEE, MMMM d")),
+            today.format(java.time.format.DateTimeFormatter.ofPattern(stringResource(R.string.home_date_pattern)))
+                .replaceFirstChar { it.titlecase() },
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.85f),
         )
@@ -382,13 +388,17 @@ private fun UpNextCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    if (days == 0L) "🎉 TODAY" else "UP NEXT",
+                    stringResource(if (days == 0L) R.string.today_label else R.string.up_next),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White.copy(alpha = 0.85f),
                 )
                 Text(
-                    if (several) "${shortDate(person)} · ${next.size} birthdays" else shortDate(person),
+                    if (several) {
+                        shortDate(person) + " · " + pluralStringResource(R.plurals.birthdays_count, next.size, next.size)
+                    } else {
+                        shortDate(person)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.85f),
                 )
@@ -420,7 +430,7 @@ private fun UpNextCard(
                         color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
                     if (age != null) {
-                        Text("turns $age", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.85f))
+                        Text(stringResource(R.string.turns_age, age), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.85f))
                     }
                 }
             }
@@ -430,7 +440,7 @@ private fun UpNextCard(
         Spacer(Modifier.height(12.dp))
         if (several) {
             Text(
-                "Wish ${person.name.substringBefore(' ')}",
+                stringResource(R.string.wish_person, person.name.substringBefore(' ')),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color.White.copy(alpha = 0.85f),
@@ -444,21 +454,21 @@ private fun UpNextCard(
                     context.launch(vm.signalIntent(person))
                 }
                 if (WhatsAppLauncher.isInstalled(context)) {
-                    QuickApp(Icons.AutoMirrored.Filled.Chat, "WhatsApp", cell) { context.launch(vm.whatsAppIntent(person)) }
+                    QuickApp(Icons.AutoMirrored.Filled.Chat, stringResource(R.string.whatsapp), cell) { context.launch(vm.whatsAppIntent(person)) }
                 }
-                QuickApp(Icons.Default.Sms, "Text", cell) {
+                QuickApp(Icons.Default.Sms, stringResource(R.string.quick_text), cell) {
                     context.launch(vm.quickMessage(person) { msg ->
                         Intent(Intent.ACTION_SENDTO, ("smsto:" + Uri.encode(phone)).toUri()).putExtra("sms_body", msg)
                     })
                 }
-                QuickApp(Icons.Default.Call, "Call", cell) {
+                QuickApp(Icons.Default.Call, stringResource(R.string.quick_call), cell) {
                     context.launch(Intent(Intent.ACTION_DIAL, ("tel:" + Uri.encode(phone)).toUri()))
                 }
             }
             if (phone == null) {
-                QuickApp(Icons.Default.PersonAdd, "Add number", cell) { onAddNumber(person) }
+                QuickApp(Icons.Default.PersonAdd, stringResource(R.string.quick_add_number), cell) { onAddNumber(person) }
             }
-            QuickApp(Icons.Default.Share, "Share", cell) {
+            QuickApp(Icons.Default.Share, stringResource(R.string.quick_share), cell) {
                 context.launch(vm.quickMessage(person) { msg ->
                     Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, msg), null)
                 })
@@ -480,7 +490,7 @@ private fun Countdown(days: Long) {
         )
         if (days > 0) {
             Text(
-                if (days == 1L) "day" else "days",
+                pluralStringResource(R.plurals.days_unit, days.toInt()),
                 style = MaterialTheme.typography.labelMedium,
                 color = Color.White.copy(alpha = 0.85f),
             )
@@ -538,7 +548,7 @@ private fun PersonCard(person: Person, today: LocalDate, onClick: () -> Unit) {
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    if (age != null) "${shortDate(person)} · turns $age" else shortDate(person),
+                    if (age != null) shortDate(person) + " · " + stringResource(R.string.turns_age, age) else shortDate(person),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -546,7 +556,11 @@ private fun PersonCard(person: Person, today: LocalDate, onClick: () -> Unit) {
             }
         }
         Spacer(Modifier.width(8.dp))
-        val label = if (days == 1L) "Tomorrow" else "$days days"
+        val label = if (days == 1L) {
+            stringResource(R.string.tomorrow)
+        } else {
+            pluralStringResource(R.plurals.days_count, days.toInt(), days.toInt())
+        }
         Text(
             label,
             style = MaterialTheme.typography.labelLarge,
@@ -555,7 +569,7 @@ private fun PersonCard(person: Person, today: LocalDate, onClick: () -> Unit) {
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
                 .then(
-                    if (soon) Modifier.background(BrandGradient)
+                    if (soon) Modifier.background(LocalPalette.current.brush)
                     else Modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest),
                 )
                 .padding(horizontal = 12.dp, vertical = 6.dp),
@@ -566,9 +580,9 @@ private fun PersonCard(person: Person, today: LocalDate, onClick: () -> Unit) {
 @Composable
 private fun ChannelIcon(channel: Channel) {
     val (icon, description) = when (channel) {
-        Channel.SMS -> Icons.Default.Sms to "Sends SMS"
+        Channel.SMS -> Icons.Default.Sms to stringResource(R.string.channel_sends_sms)
         Channel.SIGNAL -> Icons.AutoMirrored.Filled.Chat to "Signal"
-        Channel.WHATSAPP -> Icons.AutoMirrored.Filled.Chat to "WhatsApp"
+        Channel.WHATSAPP -> Icons.AutoMirrored.Filled.Chat to stringResource(R.string.whatsapp)
         Channel.NONE -> return
     }
     Spacer(Modifier.width(6.dp))
@@ -606,7 +620,7 @@ private fun badges(person: Person) = buildString {
 @Composable
 private fun shortDate(person: Person): String {
     val locale = LocalConfiguration.current.locales[0]
-    return "${Month.of(person.month).getDisplayName(TextStyle.SHORT, locale)} ${person.day}"
+    return stringResource(R.string.short_date, Month.of(person.month).getDisplayName(TextStyle.SHORT, locale), person.day)
 }
 
 @Composable
@@ -617,17 +631,17 @@ private fun EmptyState(onImport: () -> Unit, onAdd: () -> Unit) {
     ) {
         Text("🎂", style = MaterialTheme.typography.displayLarge)
         Spacer(Modifier.height(16.dp))
-        Text("No birthdays yet", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.no_birthdays_yet), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Import them from your contacts or a Birday backup (Settings → Backup), or add them by hand.",
+            stringResource(R.string.empty_hint),
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyMedium,
         )
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onImport) { Text("Import from contacts") }
+        Button(onClick = onImport) { Text(stringResource(R.string.import_from_contacts)) }
         Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = onAdd) { Text("Quick add") }
+        OutlinedButton(onClick = onAdd) { Text(stringResource(R.string.quick_add)) }
     }
 }
 
@@ -635,6 +649,6 @@ private fun Context.launch(intent: Intent) {
     try {
         startActivity(intent)
     } catch (_: ActivityNotFoundException) {
-        Toast.makeText(this, "No app found for that", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, getString(R.string.no_app_found), Toast.LENGTH_SHORT).show()
     }
 }

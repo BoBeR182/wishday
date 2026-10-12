@@ -1,5 +1,7 @@
 package io.github.wishday.ui
 
+import androidx.compose.ui.res.stringResource
+import io.github.wishday.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -75,7 +77,7 @@ fun ContactPickerSheet(
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.padding(horizontal = 16.dp).imePadding()) {
             Text(
-                "Choose a contact",
+                stringResource(R.string.choose_contact),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(start = 8.dp, bottom = 12.dp),
@@ -83,7 +85,7 @@ fun ContactPickerSheet(
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Search by name or number") },
+                placeholder = { Text(stringResource(R.string.search_name_or_number)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().focusRequester(focus),
@@ -93,7 +95,7 @@ fun ContactPickerSheet(
                     CircularProgressIndicator()
                 }
                 shown.isEmpty() -> Text(
-                    if (query.isBlank()) "No contacts with phone numbers" else "No contacts match \"$query\"",
+                    if (query.isBlank()) stringResource(R.string.no_phone_contacts) else stringResource(R.string.no_contacts_match, query),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(24.dp),
                 )

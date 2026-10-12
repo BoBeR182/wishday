@@ -1,5 +1,7 @@
 package io.github.wishday.ui
 
+import androidx.compose.ui.res.stringResource
+import io.github.wishday.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,7 +43,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import io.github.wishday.data.Person
-import io.github.wishday.ui.theme.BrandGradient
+import io.github.wishday.ui.theme.LocalPalette
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
@@ -81,10 +83,10 @@ fun QuickAddSheet(vm: WishdayViewModel, onDismiss: () -> Unit, onMoreOptions: (L
             modifier = Modifier.padding(horizontal = 24.dp).padding(bottom = 24.dp).imePadding(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Quick add", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.quick_add), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             OutlinedTextField(
                 value = name, onValueChange = { name = it },
-                label = { Text("Name") }, singleLine = true,
+                label = { Text(stringResource(R.string.name)) }, singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth().focusRequester(focus),
             )
@@ -92,13 +94,13 @@ fun QuickAddSheet(vm: WishdayViewModel, onDismiss: () -> Unit, onMoreOptions: (L
                 MonthPicker(month, { month = it }, Modifier.weight(1.6f))
                 OutlinedTextField(
                     value = day, onValueChange = { day = it.filter(Char::isDigit).take(2) },
-                    label = { Text("Day") }, singleLine = true, isError = day.isNotEmpty() && dayValue == null,
+                    label = { Text(stringResource(R.string.day)) }, singleLine = true, isError = day.isNotEmpty() && dayValue == null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                     modifier = Modifier.weight(0.9f),
                 )
                 OutlinedTextField(
                     value = year, onValueChange = { year = it.filter(Char::isDigit).take(4) },
-                    label = { Text("Year") }, placeholder = { Text("opt.") }, singleLine = true,
+                    label = { Text(stringResource(R.string.year)) }, placeholder = { Text(stringResource(R.string.year_optional_short)) }, singleLine = true,
                     isError = year.isNotEmpty() && yearValue == null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { add() }),
@@ -115,9 +117,9 @@ fun QuickAddSheet(vm: WishdayViewModel, onDismiss: () -> Unit, onMoreOptions: (L
                     } else {
                         close { onMoreOptions(null) }
                     }
-                }) { Text("More options") }
+                }) { Text(stringResource(R.string.more_options)) }
                 Box(Modifier.weight(1f))
-                GradientButton("Add birthday", enabled = valid, onClick = ::add)
+                GradientButton(stringResource(R.string.add_birthday), enabled = valid, onClick = ::add)
             }
         }
     }
@@ -133,7 +135,7 @@ fun GradientButton(text: String, enabled: Boolean = true, onClick: () -> Unit) {
         modifier = Modifier
             .alpha(if (enabled) 1f else 0.5f)
             .clip(RoundedCornerShape(50))
-            .background(BrandGradient)
+            .background(LocalPalette.current.brush)
             .height(48.dp),
     ) {
         Text(text, color = Color.White, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 12.dp))

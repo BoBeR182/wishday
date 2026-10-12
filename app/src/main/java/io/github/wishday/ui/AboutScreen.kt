@@ -1,5 +1,6 @@
 package io.github.wishday.ui
 
+import androidx.compose.ui.res.stringResource
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -62,9 +63,9 @@ fun AboutScreen(onDone: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("About") },
+                title = { Text(stringResource(R.string.about)) },
                 navigationIcon = {
-                    IconButton(onClick = onDone) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                    IconButton(onClick = onDone) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
                 },
             )
         },
@@ -78,35 +79,33 @@ fun AboutScreen(onDone: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 AppIcon()
-                Text("Wishday", style = MaterialTheme.typography.headlineMedium)
+                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium)
                 if (version != null) {
-                    Text("Version $version", style = MaterialTheme.typography.bodyMedium,
+                    Text(stringResource(R.string.version, version), style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(
-                    "Remembers birthdays and helps you wish people a happy birthday, " +
-                        "automatically by SMS or with one tap on Signal.",
+                    stringResource(R.string.about_description),
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                 )
             }
             HorizontalDivider()
-            AboutRow(Icons.Outlined.Person, "Made by Daniel Stuckless", "stuckless.net") {
+            AboutRow(Icons.Outlined.Person, stringResource(R.string.made_by), "stuckless.net") {
                 context.open("https://stuckless.net")
             }
             AboutRow(
-                Icons.Outlined.Lock, "Private by design",
-                "No internet access, no accounts, no tracking. Your birthdays never leave this phone " +
-                    "unless you export them.",
+                Icons.Outlined.Lock, stringResource(R.string.private_by_design),
+                stringResource(R.string.private_by_design_text),
             )
-            AboutRow(Icons.Outlined.Code, "Source code", "Free and open source on GitHub") { context.open(REPO) }
-            AboutRow(Icons.Outlined.BugReport, "Report a problem or suggest a feature", "Opens GitHub issues") {
+            AboutRow(Icons.Outlined.Code, stringResource(R.string.source_code), stringResource(R.string.source_code_text)) { context.open(REPO) }
+            AboutRow(Icons.Outlined.BugReport, stringResource(R.string.report_problem), stringResource(R.string.report_problem_text)) {
                 context.open("$REPO/issues")
             }
-            AboutRow(Icons.Outlined.Gavel, "License", "GNU General Public License v3.0 or later") {
+            AboutRow(Icons.Outlined.Gavel, stringResource(R.string.license), stringResource(R.string.license_text)) {
                 context.open("$REPO/blob/main/LICENSE")
             }
-            AboutRow(Icons.Outlined.Favorite, "Inspired by Birday", "A lovely open-source birthday app") {
+            AboutRow(Icons.Outlined.Favorite, stringResource(R.string.inspired_by_birday), stringResource(R.string.inspired_by_birday_text)) {
                 context.open("https://github.com/m-i-n-a-r/birday")
             }
         }
@@ -141,6 +140,6 @@ private fun Context.open(url: String) {
     try {
         startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
     } catch (_: ActivityNotFoundException) {
-        Toast.makeText(this, "No browser installed", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, getString(R.string.no_browser), Toast.LENGTH_SHORT).show()
     }
 }

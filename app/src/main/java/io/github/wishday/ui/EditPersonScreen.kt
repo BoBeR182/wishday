@@ -1,5 +1,7 @@
 package io.github.wishday.ui
 
+import androidx.compose.ui.res.stringResource
+import io.github.wishday.R
 import android.Manifest
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
@@ -140,7 +142,7 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
     }
 
     val smsPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (!granted) Toast.makeText(context, "Without SMS permission, Wishday will only remind you", Toast.LENGTH_LONG).show()
+        if (!granted) Toast.makeText(context, context.getString(R.string.sms_permission_denied), Toast.LENGTH_LONG).show()
         vm.save(current()); onDone()
     }
 
@@ -155,22 +157,22 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isNew) "Add birthday" else "Edit birthday") },
+                title = { Text(stringResource(if (isNew) R.string.add_birthday else R.string.edit_birthday)) },
                 navigationIcon = {
-                    IconButton(onClick = onDone) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                    IconButton(onClick = onDone) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
                 },
                 actions = {
                     IconButton(onClick = { favorite = !favorite }) {
                         Icon(
                             if (favorite) Icons.Filled.Star else Icons.Outlined.StarOutline,
-                            contentDescription = if (favorite) "Important (tap to unstar)" else "Mark as important",
+                            contentDescription = stringResource(if (favorite) R.string.unmark_important else R.string.mark_important),
                             tint = if (favorite) Color(0xFFFFB300) else LocalContentColor.current,
                         )
                     }
                     if (!isNew) {
-                        IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Default.Delete, "Delete") }
+                        IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Default.Delete, stringResource(R.string.delete)) }
                     }
-                    TextButton(onClick = ::save, enabled = valid) { Text("Save") }
+                    TextButton(onClick = ::save, enabled = valid) { Text(stringResource(R.string.save)) }
                 },
             )
         },
@@ -184,7 +186,7 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
         ) {
             OutlinedTextField(
                 value = name, onValueChange = { name = it },
-                label = { Text("Name") }, singleLine = true,
+                label = { Text(stringResource(R.string.name)) }, singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -192,13 +194,13 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
                 MonthPicker(month, onChange = { month = it }, modifier = Modifier.weight(1.4f))
                 OutlinedTextField(
                     value = day, onValueChange = { day = it.filter(Char::isDigit).take(2) },
-                    label = { Text("Day") }, singleLine = true, isError = dayValue == null,
+                    label = { Text(stringResource(R.string.day)) }, singleLine = true, isError = dayValue == null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(0.8f),
                 )
                 OutlinedTextField(
                     value = year, onValueChange = { year = it.filter(Char::isDigit).take(4) },
-                    label = { Text("Year") }, placeholder = { Text("optional") }, singleLine = true,
+                    label = { Text(stringResource(R.string.year)) }, placeholder = { Text(stringResource(R.string.year_optional)) }, singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f),
                 )
@@ -206,21 +208,21 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
 
             OutlinedTextField(
                 value = phone, onValueChange = { phone = it },
-                label = { Text("Phone number") }, singleLine = true,
+                label = { Text(stringResource(R.string.phone_number)) }, singleLine = true,
                 isError = needsPhone,
-                supportingText = if (needsPhone) ({ Text("Needed to send messages") }) else null,
+                supportingText = if (needsPhone) ({ Text(stringResource(R.string.phone_needed)) }) else null,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 trailingIcon = {
                     IconButton(onClick = ::pickContact) {
-                        Icon(Icons.Default.Contacts, contentDescription = "Pick from contacts")
+                        Icon(Icons.Default.Contacts, contentDescription = stringResource(R.string.pick_from_contacts))
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Text("Gift reminder", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.gift_reminder), style = MaterialTheme.typography.titleSmall)
             Text(
-                "An extra heads-up ahead of time, so there's time to get something.",
+                stringResource(R.string.gift_reminder_help),
                 style = MaterialTheme.typography.bodySmall,
             )
             Row(
@@ -228,40 +230,40 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
             ) {
                 GIFT_REMINDER_OPTIONS.forEach { (days, label) ->
-                    FilterChip(selected = giftDays == days, onClick = { giftDays = days }, label = { Text(label) })
+                    FilterChip(selected = giftDays == days, onClick = { giftDays = days }, label = { Text(stringResource(label)) })
                 }
             }
             OutlinedTextField(
                 value = notes, onValueChange = { notes = it },
-                label = { Text("Gift ideas & notes") },
-                placeholder = { Text("Likes coffee, wants a new book…") },
-                supportingText = { Text("Shown in their reminders") },
+                label = { Text(stringResource(R.string.gift_notes)) },
+                placeholder = { Text(stringResource(R.string.gift_notes_placeholder)) },
+                supportingText = { Text(stringResource(R.string.gift_notes_help)) },
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Text("On their birthday", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.on_their_birthday), style = MaterialTheme.typography.titleSmall)
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                 Channel.entries.forEachIndexed { i, c ->
                     SegmentedButton(
                         selected = channel == c,
                         onClick = { channel = c },
                         shape = SegmentedButtonDefaults.itemShape(i, Channel.entries.size),
-                    ) { Text(c.label) }
+                    ) { Text(stringResource(c.labelRes)) }
                 }
             }
-            Text(channel.explanation, style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(channel.explanationRes), style = MaterialTheme.typography.bodySmall)
 
             if (channel != Channel.NONE) {
                 OutlinedTextField(
                     value = message, onValueChange = { message = it },
-                    label = { Text("Custom message") },
+                    label = { Text(stringResource(R.string.custom_message)) },
                     placeholder = { Text(vm.settings.defaultMessage) },
-                    supportingText = { Text("Leave blank to use the default. {name}, {fullname} and {age} are filled in.") },
+                    supportingText = { Text(stringResource(R.string.custom_message_help)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp)) {
-                        Text("Preview", style = MaterialTheme.typography.labelMedium)
+                        Text(stringResource(R.string.preview), style = MaterialTheme.typography.labelMedium)
                         Text(vm.messageFor(current()), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
@@ -278,7 +280,7 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
                                         else vm.signalIntent(current()),
                                     )
                                 } catch (_: ActivityNotFoundException) {
-                                    Toast.makeText(context, "That app isn't installed", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.app_not_installed), Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },
@@ -286,10 +288,11 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
                     ) {
                         Text(
                             when {
-                                channel == Channel.SMS -> "Send SMS now"
-                                channel == Channel.WHATSAPP -> "Open in WhatsApp now"
-                                SignalLauncher.isInstalled(context) -> "Open in ${SignalLauncher.appName(context)} now"
-                                else -> "Share message now"
+                                channel == Channel.SMS -> stringResource(R.string.send_sms_now)
+                                channel == Channel.WHATSAPP -> stringResource(R.string.open_in_app_now, stringResource(R.string.whatsapp))
+                                SignalLauncher.isInstalled(context) ->
+                                    stringResource(R.string.open_in_app_now, SignalLauncher.appName(context))
+                                else -> stringResource(R.string.share_message_now)
                             },
                         )
                     }
@@ -301,9 +304,9 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete ${original.name}?") },
-            confirmButton = { TextButton(onClick = { vm.delete(original); onDone() }) { Text("Delete") } },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+            title = { Text(stringResource(R.string.delete_person_title, original.name)) },
+            confirmButton = { TextButton(onClick = { vm.delete(original); onDone() }) { Text(stringResource(R.string.delete)) } },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 
@@ -323,7 +326,7 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
     if (confirmSms) {
         AlertDialog(
             onDismissRequest = { confirmSms = false },
-            title = { Text("Text ${name.trim()} now?") },
+            title = { Text(stringResource(R.string.text_now_title, name.trim())) },
             text = { Text(vm.messageFor(current())) },
             confirmButton = {
                 TextButton(onClick = {
@@ -332,12 +335,15 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
                     val result = vm.sendSmsNow(current())
                     Toast.makeText(
                         context,
-                        result.fold({ "Sending…" }, { "Couldn't send: ${it.message}" }),
+                        result.fold(
+                            { context.getString(R.string.sending) },
+                            { context.getString(R.string.couldnt_send, it.message.orEmpty()) },
+                        ),
                         Toast.LENGTH_SHORT,
                     ).show()
-                }) { Text("Send") }
+                }) { Text(stringResource(R.string.send)) }
             },
-            dismissButton = { TextButton(onClick = { confirmSms = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmSms = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }
@@ -358,7 +364,7 @@ internal fun MonthPicker(month: Int, onChange: (Int) -> Unit, modifier: Modifier
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }, modifier = modifier) {
         OutlinedTextField(
             value = label(month), onValueChange = {}, readOnly = true,
-            label = { Text("Month") }, singleLine = true,
+            label = { Text(stringResource(R.string.month)) }, singleLine = true,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
         )
@@ -371,20 +377,26 @@ internal fun MonthPicker(month: Int, onChange: (Int) -> Unit, modifier: Modifier
 }
 
 /** Gift reminder choices: null is off. */
-private val GIFT_REMINDER_OPTIONS = listOf(null to "Off", 3 to "3 days", 7 to "1 week", 14 to "2 weeks", 30 to "1 month")
+private val GIFT_REMINDER_OPTIONS = listOf(
+    null to R.string.off,
+    3 to R.string.gift_3_days,
+    7 to R.string.gift_1_week,
+    14 to R.string.gift_2_weeks,
+    30 to R.string.gift_1_month,
+)
 
-private val Channel.label
+private val Channel.labelRes
     get() = when (this) {
-        Channel.NONE -> "Remind"
-        Channel.SMS -> "SMS"
-        Channel.SIGNAL -> "Signal"
-        Channel.WHATSAPP -> "WhatsApp"
+        Channel.NONE -> R.string.channel_remind
+        Channel.SMS -> R.string.channel_sms
+        Channel.SIGNAL -> R.string.channel_signal
+        Channel.WHATSAPP -> R.string.whatsapp
     }
 
-private val Channel.explanation
+private val Channel.explanationRes
     get() = when (this) {
-        Channel.NONE -> "You'll get a notification; Wishday won't send anything."
-        Channel.SMS -> "Wishday texts them automatically at your send time."
-        Channel.SIGNAL -> "You'll get a notification that opens Signal with the message ready — just tap send."
-        Channel.WHATSAPP -> "You'll get a notification that opens WhatsApp with the message ready — just tap send."
+        Channel.NONE -> R.string.channel_remind_help
+        Channel.SMS -> R.string.channel_sms_help
+        Channel.SIGNAL -> R.string.channel_signal_help
+        Channel.WHATSAPP -> R.string.channel_whatsapp_help
     }

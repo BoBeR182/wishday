@@ -1,5 +1,11 @@
 package io.github.wishday
 
+import io.github.wishday.ui.theme.LocalIsDark
+import androidx.core.view.WindowCompat
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Composable
+import androidx.activity.compose.LocalActivity
 import android.Manifest
 import android.os.Build
 import android.os.Bundle
@@ -23,6 +29,19 @@ import io.github.wishday.ui.WishdayViewModel
 import io.github.wishday.ui.theme.WishdayTheme
 import io.github.wishday.work.BirthdayWorker
 
+/** Keeps status/navigation bar icons readable when the app's light/dark mode differs from the system's. */
+@Composable
+private fun SystemBarIcons() {
+    val activity = LocalActivity.current ?: return
+    val dark = LocalIsDark.current
+    LaunchedEffect(dark) {
+        WindowCompat.getInsetsController(activity.window, activity.window.decorView).apply {
+            isAppearanceLightStatusBars = !dark
+            isAppearanceLightNavigationBars = !dark
+        }
+    }
+}
+
 class MainActivity : ComponentActivity() {
 
     private val notificationPermission =
@@ -39,8 +58,10 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            WishdayTheme {
-                val vm: WishdayViewModel = viewModel()
+            val vm: WishdayViewModel = viewModel()
+            val appearance by vm.appearance.collectAsState()
+            WishdayTheme(themeId = appearance.themeId, darkMode = appearance.darkMode) {
+                SystemBarIcons()
                 // Screen encoding: "list", "settings", "stats", "about:<screen to return to>", "edit:<id>" or "edit:new".
                 var screen by rememberSaveable { mutableStateOf("list") }
                 val back = { screen = if (screen.startsWith("about:")) screen.removePrefix("about:") else "list" }

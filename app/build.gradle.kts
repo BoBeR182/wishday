@@ -35,6 +35,10 @@ android {
     buildFeatures {
         compose = true
     }
+    androidResources {
+        // Lists the app's languages (English, Spanish) for Android's per-app language setting.
+        generateLocaleConfig = true
+    }
 }
 
 dependencies {

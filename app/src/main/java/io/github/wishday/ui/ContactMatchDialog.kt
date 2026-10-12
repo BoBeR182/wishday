@@ -1,5 +1,8 @@
 package io.github.wishday.ui
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import io.github.wishday.R
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -49,7 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import io.github.wishday.contacts.ContactMatch
-import io.github.wishday.ui.theme.BrandGradient
+import io.github.wishday.ui.theme.LocalPalette
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 
@@ -100,14 +103,14 @@ fun ContactMatchDialog(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(BrandGradient)
+                .background(LocalPalette.current.brush)
                 .safeDrawingPadding()
                 .padding(20.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = ::finish) { Icon(Icons.Default.Close, "Close", tint = Color.White) }
+                IconButton(onClick = ::finish) { Icon(Icons.Default.Close, stringResource(R.string.close), tint = Color.White) }
                 Text(
-                    "Match with contacts",
+                    stringResource(R.string.match_with_contacts),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -115,7 +118,7 @@ fun ContactMatchDialog(
                 )
                 IconButton(onClick = ::undo, enabled = history.isNotEmpty()) {
                     Icon(
-                        Icons.AutoMirrored.Filled.Undo, "Undo",
+                        Icons.AutoMirrored.Filled.Undo, stringResource(R.string.undo),
                         tint = Color.White.copy(alpha = if (history.isEmpty()) 0.4f else 1f),
                     )
                 }
@@ -128,8 +131,8 @@ fun ContactMatchDialog(
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(50)),
             )
             Text(
-                if (index < matches.size) "${index + 1} of ${matches.size} · ${accepted.size} linked"
-                else "${accepted.size} of ${matches.size} linked",
+                if (index < matches.size) stringResource(R.string.match_progress, index + 1, matches.size, accepted.size)
+                else stringResource(R.string.match_done_progress, accepted.size, matches.size),
                 style = MaterialTheme.typography.labelLarge,
                 color = Color.White.copy(alpha = 0.85f),
                 modifier = Modifier.padding(top = 8.dp),
@@ -139,7 +142,7 @@ fun ContactMatchDialog(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             ) {
                 Text(
-                    "Also add their birthday to the contact",
+                    stringResource(R.string.match_also_birthday),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White,
                     modifier = Modifier.weight(1f),
@@ -176,7 +179,7 @@ fun ContactMatchDialog(
 
             if (index < matches.size) {
                 Text(
-                    "Is this the right contact? Swipe or tap.",
+                    stringResource(R.string.match_question),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.85f),
                     textAlign = TextAlign.Center,
@@ -184,13 +187,13 @@ fun ContactMatchDialog(
                 )
                 Spacer(Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
-                    RoundChoice(Icons.Default.Close, "No") { swipe(false) }
-                    RoundChoice(Icons.Default.Check, "Yes") { swipe(true) }
+                    RoundChoice(Icons.Default.Close, stringResource(R.string.no)) { swipe(false) }
+                    RoundChoice(Icons.Default.Check, stringResource(R.string.yes)) { swipe(true) }
                 }
             } else {
                 TextButton(onClick = ::finish, modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        if (accepted.isEmpty()) "Close" else "Save ${accepted.size}",
+                        if (accepted.isEmpty()) stringResource(R.string.close) else stringResource(R.string.save_count, accepted.size),
                         color = Color.White,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
@@ -213,14 +216,14 @@ private fun MatchCard(match: ContactMatch, lean: Float, modifier: Modifier) {
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(28.dp),
         ) {
-            Text("In Wishday", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.in_wishday), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
                 match.person.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
             )
             Text("↓", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(vertical = 8.dp))
-            Text("Contact", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.contact), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
                 match.contact.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
@@ -232,7 +235,7 @@ private fun MatchCard(match: ContactMatch, lean: Float, modifier: Modifier) {
         if (strength > 0f) {
             val yes = lean > 0
             Text(
-                if (yes) "YES" else "NO",
+                stringResource(if (yes) R.string.stamp_yes else R.string.stamp_no),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = if (yes) Color(0xFF16A34A) else Color(0xFFDC2626),
@@ -271,11 +274,12 @@ private fun Done(linked: Int) {
         Text("🎉", style = MaterialTheme.typography.displayLarge)
         Spacer(Modifier.height(12.dp))
         Text(
-            if (linked == 0) "No changes" else "All done",
+            stringResource(if (linked == 0) R.string.no_changes else R.string.all_done),
             style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White,
         )
         Text(
-            if (linked == 0) "Nobody was linked." else "$linked ${if (linked == 1) "person" else "people"} will get their phone number.",
+            if (linked == 0) stringResource(R.string.nobody_linked)
+            else pluralStringResource(R.plurals.people_get_number, linked, linked),
             color = Color.White.copy(alpha = 0.85f),
         )
     }

@@ -18,6 +18,8 @@ Inspired by [Birday](https://github.com/m-i-n-a-r/birday).
 - An optional reminder 1–14 days ahead
 - Star important people and give them their own early gift reminder (3 days to 1 month ahead), with gift ideas shown in the reminder
 - Stats: birthdays by month, big birthdays coming up, birthday twins, star signs and more
+- Color themes (Sunset, Ocean, Forest, Berry, Midnight, or your wallpaper's colors) with light, dark or system mode
+- English and Spanish
 - Failed texts are retried automatically (up to 3 more times, 15 minutes apart), and you're told whether each one really went out
 - Export and import birthdays as CSV, for backups, moving phones, spreadsheets, or bringing them in from another app
 - Import a [Birday](https://github.com/m-i-n-a-r/birday) backup directly, to switch over in one step

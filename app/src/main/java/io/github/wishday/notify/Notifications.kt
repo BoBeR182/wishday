@@ -27,9 +27,9 @@ class Notifications(private val context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannels(
             listOf(
-                NotificationChannel(CH_TODAY, "Birthdays today", NotificationManager.IMPORTANCE_HIGH),
-                NotificationChannel(CH_UPCOMING, "Upcoming birthdays", NotificationManager.IMPORTANCE_DEFAULT),
-                NotificationChannel(CH_SENT, "Sent messages", NotificationManager.IMPORTANCE_LOW),
+                NotificationChannel(CH_TODAY, context.getString(R.string.channel_today), NotificationManager.IMPORTANCE_HIGH),
+                NotificationChannel(CH_UPCOMING, context.getString(R.string.channel_upcoming), NotificationManager.IMPORTANCE_DEFAULT),
+                NotificationChannel(CH_SENT, context.getString(R.string.channel_sent), NotificationManager.IMPORTANCE_LOW),
             ),
         )
     }
@@ -51,8 +51,8 @@ class Notifications(private val context: Context) {
         )
         post(
             person, KIND_TODAY, CH_TODAY,
-            title = "🎂 It's ${person.name}'s birthday",
-            text = "Tap to send on $app: $message",
+            title = context.getString(R.string.notif_birthday_today, person.name),
+            text = context.getString(R.string.notif_tap_to_send, app, message),
             tap = tap,
         )
     }
@@ -61,48 +61,54 @@ class Notifications(private val context: Context) {
     fun todayReminder(person: Person, note: String? = null) {
         post(
             person, KIND_TODAY, CH_TODAY,
-            title = "🎂 It's ${person.name}'s birthday",
-            text = note ?: "Don't forget to say happy birthday!",
+            title = context.getString(R.string.notif_birthday_today, person.name),
+            text = note ?: context.getString(R.string.notif_dont_forget),
             tap = openApp(),
         )
     }
 
     /** The person's own early reminder, to leave time for a gift. */
     fun giftReminder(person: Person, days: Long) {
+        val res = context.resources
         val whenText = when {
-            days == 1L -> "tomorrow"
-            days % 7 == 0L && days >= 7 -> if (days == 7L) "in 1 week" else "in ${days / 7} weeks"
-            else -> "in $days days"
+            days == 1L -> context.getString(R.string.when_tomorrow)
+            days % 7 == 0L -> res.getQuantityString(R.plurals.when_in_weeks, (days / 7).toInt(), (days / 7).toInt())
+            else -> res.getQuantityString(R.plurals.when_in_days, days.toInt(), days.toInt())
         }
         post(
             person, KIND_UPCOMING, CH_UPCOMING,
-            title = "🎁 ${person.name}'s birthday is $whenText",
-            text = person.notes?.takeIf { it.isNotBlank() }?.let { "Gift ideas: $it" }
-                ?: "Time to think about a gift.",
+            title = context.getString(R.string.notif_gift_title, person.name, whenText),
+            text = person.notes?.takeIf { it.isNotBlank() }?.let { context.getString(R.string.notif_gift_ideas, it) }
+                ?: context.getString(R.string.notif_gift_default),
             tap = openApp(),
         )
     }
 
     fun upcoming(person: Person, days: Long) {
-        val whenText = if (days == 1L) "tomorrow" else "in $days days"
+        val whenText = if (days == 1L) {
+            context.getString(R.string.when_tomorrow)
+        } else {
+            context.resources.getQuantityString(R.plurals.when_in_days, days.toInt(), days.toInt())
+        }
         post(
             person, KIND_UPCOMING, CH_UPCOMING,
-            title = "${person.name}'s birthday is $whenText",
-            text = person.notes?.takeIf { it.isNotBlank() }?.let { "Notes: $it" } ?: "Wishday will remind you on the day.",
+            title = context.getString(R.string.notif_upcoming_title, person.name, whenText),
+            text = person.notes?.takeIf { it.isNotBlank() }?.let { context.getString(R.string.notif_notes, it) }
+                ?: context.getString(R.string.notif_upcoming_default),
             tap = openApp(),
         )
     }
 
     fun smsSent(person: Person, message: String) {
-        post(person, KIND_SMS, CH_SENT, title = "Sent birthday SMS to ${person.name}", text = message, tap = openApp())
+        post(person, KIND_SMS, CH_SENT, title = context.getString(R.string.notif_sms_sent, person.name), text = message, tap = openApp())
     }
 
     /** The network rejected an SMS; another attempt is scheduled. */
     fun smsRetrying(person: Person, message: String, reason: String, minutes: Long) {
         post(
             person, KIND_SMS, CH_SENT,
-            title = "Couldn't text ${person.name} yet",
-            text = "$reason. Trying again in $minutes minutes.",
+            title = context.getString(R.string.notif_sms_retry_title, person.name),
+            text = context.resources.getQuantityString(R.plurals.notif_sms_retry_text, minutes.toInt(), minutes.toInt(), reason),
             tap = openApp(),
         )
     }
@@ -119,8 +125,8 @@ class Notifications(private val context: Context) {
         )
         post(
             person, KIND_SMS, CH_TODAY,
-            title = "Couldn't text ${person.name}",
-            text = "$reason. Tap to send it yourself.",
+            title = context.getString(R.string.notif_sms_failed_title, person.name),
+            text = context.getString(R.string.notif_sms_failed_text, reason),
             tap = tap,
         )
     }

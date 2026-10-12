@@ -8,6 +8,7 @@ import android.content.Intent
 import android.telephony.SmsManager
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import io.github.wishday.R
 import io.github.wishday.data.AppDatabase
 import io.github.wishday.notify.Notifications
 import io.github.wishday.work.SmsRetryWorker
@@ -38,9 +39,9 @@ class SmsResultReceiver : BroadcastReceiver() {
                             .setInputData(SmsRetryWorker.input(personId, message, attempt + 1))
                             .build()
                         WorkManager.getInstance(app).enqueue(retry)
-                        notifications.smsRetrying(person, message, reason(code), RETRY_DELAY_MINUTES)
+                        notifications.smsRetrying(person, message, reason(app, code), RETRY_DELAY_MINUTES)
                     }
-                    else -> notifications.smsFailed(person, message, reason(code))
+                    else -> notifications.smsFailed(person, message, reason(app, code))
                 }
             } finally {
                 pending.finish()
@@ -68,11 +69,11 @@ class SmsResultReceiver : BroadcastReceiver() {
             )
         }
 
-        private fun reason(code: Int): String = when (code) {
-            SmsManager.RESULT_ERROR_NO_SERVICE -> "No mobile service"
-            SmsManager.RESULT_ERROR_RADIO_OFF -> "Mobile network is off (airplane mode?)"
-            SmsManager.RESULT_ERROR_LIMIT_EXCEEDED -> "Too many messages sent recently"
-            else -> "The network rejected it (error $code)"
+        private fun reason(context: Context, code: Int): String = when (code) {
+            SmsManager.RESULT_ERROR_NO_SERVICE -> context.getString(R.string.sms_error_no_service)
+            SmsManager.RESULT_ERROR_RADIO_OFF -> context.getString(R.string.sms_error_radio_off)
+            SmsManager.RESULT_ERROR_LIMIT_EXCEEDED -> context.getString(R.string.sms_error_limit)
+            else -> context.getString(R.string.sms_error_network, code)
         }
     }
 }
