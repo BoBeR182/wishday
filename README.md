@@ -1,5 +1,7 @@
 # Wishday 🎂
 
+![Wishday: never miss a birthday again](docs/banner.png)
+
 A small, open-source Android app that remembers birthdays and helps you wish people a happy birthday, by **SMS (fully automatic)** or **Signal (prefilled, one tap)**.
 
 Inspired by [Birday](https://github.com/m-i-n-a-r/birday).
@@ -57,3 +59,5 @@ Requires Android 8.0 (API 26) or newer.
 ## License
 
 [GPL-3.0-or-later](LICENSE)
+
+Made by [Daniel Stuckless](https://stuckless.net).

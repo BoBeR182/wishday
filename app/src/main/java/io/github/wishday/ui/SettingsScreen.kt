@@ -48,7 +48,7 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(vm: WishdayViewModel, onDone: () -> Unit) {
+fun SettingsScreen(vm: WishdayViewModel, onDone: () -> Unit, onAbout: () -> Unit) {
     val s = vm.settings
     var message by rememberSaveable { mutableStateOf(s.defaultMessage) }
     var hour by rememberSaveable { mutableIntStateOf(s.sendHour) }
@@ -56,8 +56,9 @@ fun SettingsScreen(vm: WishdayViewModel, onDone: () -> Unit) {
     var daysBefore by rememberSaveable { mutableFloatStateOf(s.remindDaysBefore.toFloat()) }
     var pickingTime by rememberSaveable { mutableStateOf(false) }
 
+    fun save() = vm.updateSettings(message, hour, minute, daysBefore.roundToInt())
     fun saveAndClose() {
-        vm.updateSettings(message, hour, minute, daysBefore.roundToInt())
+        save()
         onDone()
     }
     BackHandler(onBack = ::saveAndClose)
@@ -115,6 +116,13 @@ fun SettingsScreen(vm: WishdayViewModel, onDone: () -> Unit) {
             Backup(vm)
             HorizontalDivider()
             AboutSignal()
+            HorizontalDivider()
+            ListItem(
+                // Save first: leaving this screen would otherwise drop unsaved edits.
+                modifier = Modifier.clickable { save(); onAbout() },
+                headlineContent = { Text("About Wishday") },
+                supportingContent = { Text("Version, privacy, license and source code") },
+            )
         }
     }
 
