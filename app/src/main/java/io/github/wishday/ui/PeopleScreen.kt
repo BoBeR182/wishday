@@ -40,7 +40,10 @@ import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Sms
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,6 +53,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -74,6 +78,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import io.github.wishday.birthday.Birthdays
+import io.github.wishday.contacts.ContactMatch
 import io.github.wishday.data.Channel
 import io.github.wishday.data.Person
 import io.github.wishday.messaging.SignalLauncher
@@ -106,11 +111,41 @@ fun PeopleScreen(
             )
         }
     }
-    val contactsPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) importContacts()
-        else scope.launch { snackbar.showSnackbar("Contacts permission is needed to import birthdays") }
+    var matches by remember { mutableStateOf<List<ContactMatch>?>(null) }
+    val findMatches: () -> Unit = {
+        scope.launch {
+            val found = vm.findContactMatches()
+            if (found.isEmpty()) snackbar.showSnackbar("No new matches: everyone either has a number or no single contact fits")
+            else matches = found
+        }
     }
-    val askContacts = { contactsPermission.launch(Manifest.permission.READ_CONTACTS) }
+
+    // What to run once contacts permissions are granted.
+    var afterPermission by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val contactsPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        if (result.values.all { it }) afterPermission?.invoke()
+        else scope.launch { snackbar.showSnackbar("Contacts permission is needed for that") }
+        afterPermission = null
+    }
+    fun withContacts(write: Boolean = false, action: () -> Unit) {
+        afterPermission = action
+        contactsPermission.launch(
+            if (write) arrayOf(Manifest.permission.READ_CONTACTS, Manifest.permission.WRITE_CONTACTS)
+            else arrayOf(Manifest.permission.READ_CONTACTS),
+        )
+    }
+    fun contactWriteSummary(r: WishdayViewModel.ContactWriteResult) = buildList {
+        add("Added ${r.added} ${if (r.added == 1) "birthday" else "birthdays"} to contacts")
+        if (r.alreadyHad > 0) add("${r.alreadyHad} already had one")
+        if (r.notWritten > 0) add("${r.notWritten} couldn't be edited")
+    }.joinToString(" · ")
+    var confirmSaveAll by remember { mutableStateOf(false) }
+    val saveAllToContacts: () -> Unit = {
+        withContacts(write = true) {
+            scope.launch { snackbar.showSnackbar(contactWriteSummary(vm.writeBirthdaysToContacts())) }
+        }
+    }
+    val askContacts = { withContacts(action = importContacts) }
 
     LightStatusBarIcons()
 
@@ -139,7 +174,13 @@ fun PeopleScreen(
             contentPadding = PaddingValues(bottom = 112.dp), // clear the FAB and navigation bar
         ) {
             item {
-                Header(next, today, vm, onEdit, onImport = askContacts, onSettings = onSettings)
+                Header(
+                    next, today, vm, onEdit,
+                    onImport = askContacts,
+                    onMatch = { withContacts(action = findMatches) },
+                    onSaveToContacts = { confirmSaveAll = true },
+                    onSettings = onSettings,
+                )
             }
             if (people.isEmpty()) {
                 item { EmptyState(onImport = askContacts, onAdd = { quickAdd = true }) }
@@ -157,6 +198,46 @@ fun PeopleScreen(
                 }
             }
         }
+    }
+
+    matches?.let { found ->
+        ContactMatchDialog(
+            found,
+            onDismiss = { matches = null },
+            onConfirm = { chosen, writeBirthdays ->
+                matches = null
+                scope.launch {
+                    val linked = vm.applyContactMatches(chosen)
+                    if (writeBirthdays) {
+                        withContacts(write = true) {
+                            scope.launch {
+                                val r = vm.writeBirthdaysToContacts(linked)
+                                snackbar.showSnackbar("Linked ${linked.size} · ${contactWriteSummary(r)}")
+                            }
+                        }
+                    } else {
+                        snackbar.showSnackbar("Linked ${linked.size} to contacts. Tap someone to choose SMS or Signal.")
+                    }
+                }
+            },
+        )
+    }
+
+    if (confirmSaveAll) {
+        AlertDialog(
+            onDismissRequest = { confirmSaveAll = false },
+            title = { Text("Save birthdays to contacts?") },
+            text = {
+                Text(
+                    "Adds each linked person's birthday to their contact. Contacts that already have a " +
+                        "birthday are left alone, and nothing is deleted.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { confirmSaveAll = false; saveAllToContacts() }) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { confirmSaveAll = false }) { Text("Cancel") } },
+        )
     }
 
     if (quickAdd) {
@@ -190,8 +271,11 @@ private fun Header(
     vm: WishdayViewModel,
     onEdit: (Long) -> Unit,
     onImport: () -> Unit,
+    onMatch: () -> Unit,
+    onSaveToContacts: () -> Unit,
     onSettings: () -> Unit,
 ) {
+    var menu by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -208,8 +292,24 @@ private fun Header(
                 color = Color.White,
                 modifier = Modifier.weight(1f),
             )
-            IconButton(onClick = onImport) {
-                Icon(Icons.Default.Contacts, contentDescription = "Import from contacts", tint = Color.White)
+            Box {
+                IconButton(onClick = { menu = true }) {
+                    Icon(Icons.Default.Contacts, contentDescription = "Contacts", tint = Color.White)
+                }
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Import birthdays from contacts") },
+                        onClick = { menu = false; onImport() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Match people to contacts") },
+                        onClick = { menu = false; onMatch() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Save birthdays to contacts") },
+                        onClick = { menu = false; onSaveToContacts() },
+                    )
+                }
             }
             IconButton(onClick = onSettings) {
                 Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)

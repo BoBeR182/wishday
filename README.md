@@ -19,6 +19,8 @@ Inspired by [Birday](https://github.com/m-i-n-a-r/birday).
 - Failed texts are retried automatically (up to 3 more times, 15 minutes apart), and you're told whether each one really went out
 - Export and import birthdays as CSV, for backups, moving phones, spreadsheets, or bringing them in from another app
 - Import a [Birday](https://github.com/m-i-n-a-r/birday) backup directly, to switch over in one step
+- Match people to your contacts by name, reviewing each match with a quick yes/no swipe, and optionally save their birthdays into your contacts
+- Quick add, plus one-tap buttons on the next birthday to message them on Signal or Molly, text, call or share
 - People born on Feb 29 are celebrated on Feb 28 in non-leap years
 - No internet permission, no accounts, no tracking. Everything stays on the device.
 
@@ -39,6 +41,7 @@ Automatic SMS needs the `SEND_SMS` permission. Google Play only allows that perm
 | Room database of people | `data/Person.kt`, `data/PersonDao.kt` |
 | Date math and message templating | `birthday/Birthdays.kt` |
 | Contact import | `contacts/ContactImporter.kt` |
+| Contact matching and birthday writing | `contacts/ContactMatcher.kt`, `contacts/ContactWriter.kt` |
 | SMS sending | `messaging/SmsSender.kt` |
 | SMS results and retries | `messaging/SmsResultReceiver.kt`, `work/SmsRetryWorker.kt` |
 | CSV export and import | `backup/BirthdayCsv.kt` |

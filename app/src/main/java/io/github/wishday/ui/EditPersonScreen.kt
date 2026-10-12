@@ -1,6 +1,13 @@
 package io.github.wishday.ui
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.ContactsContract.CommonDataKinds.Phone
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.compose.material.icons.filled.Contacts
 import android.content.ActivityNotFoundException
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -94,6 +101,17 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
         customMessage = message.ifBlank { null },
     )
 
+    // The system picker grants access to just the chosen number, so no contacts permission is needed.
+    val pickPhone = rememberLauncherForActivityResult(PickPhone) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        context.contentResolver.query(uri, arrayOf(Phone.NUMBER, Phone.DISPLAY_NAME), null, null, null)?.use { c ->
+            if (c.moveToFirst()) {
+                c.getString(0)?.let { phone = it }
+                if (name.isBlank()) c.getString(1)?.let { name = it }
+            }
+        }
+    }
+
     val smsPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (!granted) Toast.makeText(context, "Without SMS permission, Wishday will only remind you", Toast.LENGTH_LONG).show()
         vm.save(current()); onDone()
@@ -158,6 +176,11 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
                 isError = needsPhone,
                 supportingText = if (needsPhone) ({ Text("Needed to send messages") }) else null,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                trailingIcon = {
+                    IconButton(onClick = { pickPhone.launch(null) }) {
+                        Icon(Icons.Default.Contacts, contentDescription = "Pick from contacts")
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -243,6 +266,13 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
             dismissButton = { TextButton(onClick = { confirmSms = false }) { Text("Cancel") } },
         )
     }
+}
+
+/** Opens the system contact picker filtered to phone numbers; returns the chosen number's URI. */
+private object PickPhone : ActivityResultContract<Unit?, Uri?>() {
+    override fun createIntent(context: Context, input: Unit?) = Intent(Intent.ACTION_PICK, Phone.CONTENT_URI)
+    override fun parseResult(resultCode: Int, intent: Intent?): Uri? =
+        intent?.data.takeIf { resultCode == Activity.RESULT_OK }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -6,7 +6,7 @@ import android.provider.ContactsContract.CommonDataKinds.Phone
 import android.provider.ContactsContract.Data
 import io.github.wishday.data.Person
 
-/** Reads birthdays stored in the device's contacts. Requires READ_CONTACTS. */
+/** Reads birthdays and phone numbers from the device's contacts. Requires READ_CONTACTS. */
 class ContactImporter(private val context: Context) {
 
     fun readBirthdays(): List<Person> {
@@ -39,6 +39,28 @@ class ContactImporter(private val context: Context) {
         if (byContact.isEmpty()) return emptyList()
         val phones = readPhones(byContact.keys)
         return byContact.map { (id, person) -> person.copy(phone = phones[id]) }
+    }
+
+    /** Every contact that has a phone number, with their best number. */
+    fun readPhoneContacts(): List<PhoneContact> {
+        val names = mutableMapOf<Long, Pair<String, String>>()
+        context.contentResolver.query(
+            Phone.CONTENT_URI,
+            arrayOf(Phone.CONTACT_ID, Phone.LOOKUP_KEY, Phone.DISPLAY_NAME),
+            null,
+            null,
+            null,
+        )?.use { c ->
+            while (c.moveToNext()) {
+                val key = c.getString(1) ?: continue
+                val name = c.getString(2)?.takeIf { it.isNotBlank() } ?: continue
+                names.putIfAbsent(c.getLong(0), key to name)
+            }
+        }
+        val phones = readPhones(names.keys)
+        return names.mapNotNull { (id, keyAndName) ->
+            phones[id]?.let { PhoneContact(keyAndName.first, keyAndName.second, it) }
+        }
     }
 
     /** Best phone per contact: super-primary, then mobile, then anything. */

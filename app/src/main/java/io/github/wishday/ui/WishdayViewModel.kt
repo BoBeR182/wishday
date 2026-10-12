@@ -9,6 +9,9 @@ import io.github.wishday.backup.BirdayBackup
 import io.github.wishday.backup.BirthdayCsv
 import io.github.wishday.birthday.Birthdays
 import io.github.wishday.contacts.ContactImporter
+import io.github.wishday.contacts.ContactMatch
+import io.github.wishday.contacts.ContactMatcher
+import io.github.wishday.contacts.ContactWriter
 import io.github.wishday.data.AppDatabase
 import io.github.wishday.data.Person
 import io.github.wishday.data.Settings
@@ -89,6 +92,31 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
     data class ImportResult(val added: Int, val duplicates: Int, val invalid: Int)
 
     private fun Person.identity() = Triple(name.trim().lowercase(), month, day)
+
+    /** People without a number who have exactly one same-named contact. Requires READ_CONTACTS. */
+    suspend fun findContactMatches(): List<ContactMatch> = withContext(Dispatchers.IO) {
+        ContactMatcher.match(dao.getAll(), ContactImporter(getApplication()).readPhoneContacts())
+    }
+
+    /** Copies each matched contact's number onto the person and links them to the contact. */
+    suspend fun applyContactMatches(matches: List<ContactMatch>): List<Person> = withContext(Dispatchers.IO) {
+        matches.map { (person, contact) ->
+            person.copy(phone = contact.phone, contactLookupKey = contact.lookupKey).also { dao.upsert(it) }
+        }
+    }
+
+    data class ContactWriteResult(val added: Int, val alreadyHad: Int, val notWritten: Int)
+
+    /** Adds birthdays to the linked contacts of [people] (everyone linked when null). Requires WRITE_CONTACTS. */
+    suspend fun writeBirthdaysToContacts(people: List<Person>? = null): ContactWriteResult = withContext(Dispatchers.IO) {
+        val writer = ContactWriter(getApplication())
+        val outcomes = (people ?: dao.getAll()).mapNotNull { p -> p.contactLookupKey?.let { writer.addBirthday(it, p) } }
+        ContactWriteResult(
+            added = outcomes.count { it == ContactWriter.Outcome.ADDED },
+            alreadyHad = outcomes.count { it == ContactWriter.Outcome.ALREADY_HAS_BIRTHDAY },
+            notWritten = outcomes.count { it == ContactWriter.Outcome.NOT_FOUND || it == ContactWriter.Outcome.READ_ONLY },
+        )
+    }
 
     fun messageFor(person: Person): String =
         Birthdays.render(person.customMessage ?: settings.defaultMessage, person, LocalDate.now())
