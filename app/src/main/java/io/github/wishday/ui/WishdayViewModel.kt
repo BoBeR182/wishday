@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.wishday.backup.BirdayBackup
 import io.github.wishday.backup.BirthdayCsv
 import io.github.wishday.birthday.Birthdays
 import io.github.wishday.contacts.ContactImporter
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.time.LocalDate
 
 class WishdayViewModel(app: Application) : AndroidViewModel(app) {
@@ -34,12 +36,16 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun get(id: Long): Person? = dao.get(id)
 
-    fun save(person: Person) = viewModelScope.launch {
-        dao.upsert(person)
+    fun save(person: Person) = viewModelScope.launch { saveNow(person) }
+
+    /** Saves [person] and returns their id (new or existing). */
+    suspend fun saveNow(person: Person): Long {
+        val id = dao.upsert(person).takeIf { it > 0 } ?: person.id
         val today = LocalDate.now()
         if (Birthdays.isToday(person, today) && person.lastGreetedYear != today.year) {
             BirthdayWorker.catchUpIfDue(getApplication())
         }
+        return id
     }
 
     fun delete(person: Person) = viewModelScope.launch { dao.delete(person) }
@@ -60,12 +66,19 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
         people.size
     }
 
-    /** Adds people from a CSV file, skipping anyone already saved with the same name and birthday. */
-    suspend fun importCsv(uri: Uri): ImportResult = withContext(Dispatchers.IO) {
-        val text = checkNotNull(getApplication<Application>().contentResolver.openInputStream(uri)) {
-            "Couldn't open the file"
-        }.bufferedReader().use { it.readText() }
-        val parsed = BirthdayCsv.read(text)
+    /**
+     * Adds people from a CSV file or a Birday backup (detected from the file's contents),
+     * skipping anyone already saved with the same name and birthday.
+     */
+    suspend fun importFile(uri: Uri): ImportResult = withContext(Dispatchers.IO) {
+        val app = getApplication<Application>()
+        val bytes = checkNotNull(app.contentResolver.openInputStream(uri)) { "Couldn't open the file" }
+            .use { it.readBytes() }
+        val parsed = if (BirdayBackup.looksLikeBackup(bytes)) {
+            BirdayBackup.read(bytes.inputStream(), File(app.cacheDir, "birday-import.db"))
+        } else {
+            BirthdayCsv.read(bytes.toString(Charsets.UTF_8))
+        }
         val seen = dao.getAll().mapTo(mutableSetOf()) { it.identity() }
         val fresh = parsed.people.filter { seen.add(it.identity()) }
         // No catch-up run here: restoring a backup on a new phone shouldn't text someone already greeted today.
@@ -84,6 +97,15 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
     fun sendSmsNow(person: Person): Result<Unit> =
         SmsSender(getApplication()).send(person, messageFor(person))
             .onSuccess { markGreetedIfToday(person) }
+
+    /**
+     * For the home screen's quick buttons: [intent] is built from today's message, and opening
+     * a message counts as greeting them, like the Signal button.
+     */
+    fun quickMessage(person: Person, intent: (message: String) -> Intent): Intent {
+        markGreetedIfToday(person)
+        return intent(messageFor(person))
+    }
 
     fun signalIntent(person: Person): Intent {
         markGreetedIfToday(person)

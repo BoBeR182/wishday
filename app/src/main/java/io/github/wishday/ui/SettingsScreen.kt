@@ -156,13 +156,13 @@ private fun Backup(vm: WishdayViewModel) {
     val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
-            runCatching { vm.importCsv(uri) }
+            runCatching { vm.importFile(uri) }
                 .onSuccess { r ->
                     toast(
                         buildList {
                             add("Imported ${r.added}")
                             if (r.duplicates > 0) add("${r.duplicates} already saved")
-                            if (r.invalid > 0) add("${r.invalid} rows unreadable")
+                            if (r.invalid > 0) add("${r.invalid} skipped")
                         }.joinToString(" · "),
                     )
                 }
@@ -178,10 +178,11 @@ private fun Backup(vm: WishdayViewModel) {
     )
     ListItem(
         modifier = Modifier.clickable {
-            import.launch(arrayOf("text/csv", "text/comma-separated-values", "text/plain", "application/csv"))
+            // Birday backups have no extension or MIME type, so any file can be picked; the contents decide.
+            import.launch(arrayOf("*/*"))
         },
         headlineContent = { Text("Import birthdays") },
-        supportingContent = { Text("Add people from a CSV file: a Wishday export, or any file with name and birthday columns") },
+        supportingContent = { Text("From a Birday backup, a Wishday export, or any CSV with name and birthday columns") },
     )
 }
 

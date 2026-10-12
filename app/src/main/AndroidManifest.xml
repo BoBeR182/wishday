@@ -11,6 +11,7 @@
     <!-- Package visibility (Android 11+): lets us detect Signal and its smsto: handler. -->
     <queries>
         <package android:name="org.thoughtcrime.securesms" />
+        <package android:name="im.molly.app" />
         <intent>
             <action android:name="android.intent.action.SENDTO" />
             <data android:scheme="smsto" />

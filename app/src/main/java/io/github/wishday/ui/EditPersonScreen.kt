@@ -205,7 +205,7 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
                     ) {
                         Text(
                             if (channel == Channel.SMS) "Send SMS now"
-                            else if (SignalLauncher.isInstalled(context)) "Open in Signal now"
+                            else if (SignalLauncher.isInstalled(context)) "Open in ${SignalLauncher.appName(context)} now"
                             else "Share message now",
                         )
                     }
@@ -247,7 +247,7 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MonthPicker(month: Int, onChange: (Int) -> Unit, modifier: Modifier = Modifier) {
+internal fun MonthPicker(month: Int, onChange: (Int) -> Unit, modifier: Modifier = Modifier) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val locale = LocalConfiguration.current.locales[0]
     fun label(m: Int) = Month.of(m).getDisplayName(TextStyle.FULL, locale)

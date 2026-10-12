@@ -1,11 +1,21 @@
 package io.github.wishday.ui.theme
 
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Brand colors, shared with the launcher icon (tools/artwork.py).
+val Coral = Color(0xFFFF7A59)
+val Plum = Color(0xFF7B2CBF)
+val Rose = Color(0xFFFF6F9C)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+/** The coral-to-plum gradient behind the icon and the home screen header. */
+val BrandGradient = Brush.linearGradient(listOf(Coral, Rose, Plum))
+
+/** Avatar gradients; each person gets one based on their name so it stays stable. */
+val AvatarGradients = listOf(
+    listOf(Color(0xFFFF9A76), Color(0xFFFF5E8A)),
+    listOf(Color(0xFFB388FF), Color(0xFF7B2CBF)),
+    listOf(Color(0xFF4CC9F0), Color(0xFF4361EE)),
+    listOf(Color(0xFFFFD166), Color(0xFFFF7A59)),
+    listOf(Color(0xFF80ED99), Color(0xFF14B8A6)),
+)
