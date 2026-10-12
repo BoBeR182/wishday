@@ -1,0 +1,10 @@
+Wishday remembers birthdays and helps you send the message.
+
+<ul>
+<li>Import birthdays from your contacts or add them by hand</li>
+<li>Auto SMS: Wishday texts them at the time you choose</li>
+<li>Signal: a notification opens Signal with your message ready, so you just tap send</li>
+<li>Message templates with {name}, {fullname} and {age}</li>
+<li>Optional reminders before the day</li>
+<li>No internet permission, no tracking; everything stays on your phone</li>
+</ul>
