@@ -67,6 +67,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Close
+import io.github.wishday.contacts.ContactMatcher
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -170,6 +175,20 @@ fun PeopleScreen(
     }.orEmpty()
     val rest = people.drop(next.size)
 
+    // Searching covers everyone, "Up next" included; sorting by name lists everyone A–Z.
+    var query by rememberSaveable { mutableStateOf("") }
+    var byName by rememberSaveable { mutableStateOf(false) }
+    val listed = remember(people, rest, query, byName) {
+        val q = ContactMatcher.normalize(query)
+        val digits = query.filter(Char::isDigit)
+        val base = if (query.isBlank() && !byName) rest else people
+        val found = if (query.isBlank()) base else base.filter { p ->
+            (q.isNotEmpty() && ContactMatcher.normalize(p.name).contains(q)) ||
+                (digits.length >= 3 && p.phone.orEmpty().filter(Char::isDigit).contains(digits))
+        }
+        if (byName) found.sortedBy { ContactMatcher.normalize(it.name) } else found
+    }
+
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         floatingActionButton = {
@@ -201,16 +220,49 @@ fun PeopleScreen(
             }
             if (people.isEmpty()) {
                 item { EmptyState(onImport = askContacts, onAdd = { quickAdd = true }) }
-            } else if (rest.isNotEmpty()) {
+            } else if (people.size > next.size) {
                 item {
-                    Text(
-                        stringResource(R.string.coming_up),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 8.dp),
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 20.dp),
+                    ) {
+                        Text(
+                            stringResource(if (query.isBlank() && !byName) R.string.coming_up else R.string.everyone),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f),
+                        )
+                        FilterChip(selected = !byName, onClick = { byName = false }, label = { Text(stringResource(R.string.sort_date)) })
+                        FilterChip(selected = byName, onClick = { byName = true }, label = { Text(stringResource(R.string.sort_name)) })
+                    }
+                }
+                item {
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        placeholder = { Text(stringResource(R.string.search_name_or_number)) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        trailingIcon = {
+                            if (query.isNotEmpty()) {
+                                IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, stringResource(R.string.clear_search)) }
+                            }
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
-                items(rest, key = { it.id }) { person ->
+                if (listed.isEmpty()) {
+                    item {
+                        Text(
+                            stringResource(R.string.no_one_matches, query.trim()),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                        )
+                    }
+                }
+                items(listed, key = { it.id }) { person ->
                     PersonCard(person, today, onClick = { onEdit(person.id) })
                 }
             }

@@ -79,6 +79,11 @@
     </plurals>
     <string name="quick_add">Quick add</string>
     <string name="coming_up">Coming up</string>
+    <string name="everyone">Everyone</string>
+    <string name="sort_date">Date</string>
+    <string name="sort_name">Name</string>
+    <string name="clear_search">Clear search</string>
+    <string name="no_one_matches">No one matches “%1$s”</string>
     <plurals name="linked_count">
         <item quantity="one">Linked %d</item>
         <item quantity="other">Linked %d</item>
