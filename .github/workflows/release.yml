@@ -66,11 +66,14 @@ jobs:
 
       - name: Verify signature
         run: |
+          set -o pipefail
           apk=app/build/outputs/apk/release/app-release.apk
           apksigner=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner
-          actual=$("$apksigner" verify --print-certs "$apk" | sed -nE 's/^Signer #1 certificate SHA-256 digest: //p')
+          "$apksigner" verify --print-certs "$apk" | tee certs.txt
+          # Every signer listed must be the release key.
+          actual=$(sed -nE 's/.*certificate SHA-256 digest: //p' certs.txt | sort -u)
           if [ "$actual" != "$CERT_SHA256" ]; then
-            echo "::error::APK is signed with $actual, expected $CERT_SHA256"; exit 1
+            echo "::error::APK is signed with '$actual', expected $CERT_SHA256"; exit 1
           fi
           cp "$apk" "wishday-$VERSION.apk"
 
