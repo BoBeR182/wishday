@@ -1,0 +1,8 @@
+• Tus datos no se incluyen en copias en la nube ni transferencias entre teléfonos
+• Nunca envía dos SMS a la misma persona
+• Te avisa si un cumpleaños pasó con el teléfono apagado
+• Elige la SIM que envía los SMS
+• Los mensajes largos enviados solo en parte no se reenvían solos
+• Al importar, pregunta antes de activar los SMS automáticos
+• Las copias CSV recuerdan a quién felicitaste y son seguras en hojas de cálculo
+• Sin WhatsApp, su opción abre el menú de compartir

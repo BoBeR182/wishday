@@ -18,6 +18,9 @@ import io.github.wishday.R
 import io.github.wishday.data.Person
 import io.github.wishday.messaging.SignalLauncher
 import io.github.wishday.messaging.WhatsAppLauncher
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 class Notifications(private val context: Context) {
 
@@ -63,6 +66,19 @@ class Notifications(private val context: Context) {
             person, KIND_TODAY, CH_TODAY,
             title = context.getString(R.string.notif_birthday_today, person.name),
             text = note ?: context.getString(R.string.notif_dont_forget),
+            tap = openApp(),
+        )
+    }
+
+    /** Their birthday passed on [day] without a run, so no greeting or reminder went out. */
+    fun missedBirthday(person: Person, day: LocalDate) {
+        post(
+            person, KIND_MISSED, CH_TODAY,
+            title = context.getString(R.string.notif_missed_title, person.name),
+            text = context.getString(
+                R.string.notif_missed_text,
+                day.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
+            ),
             tap = openApp(),
         )
     }
@@ -160,6 +176,7 @@ class Notifications(private val context: Context) {
         const val CH_TODAY = "today"
         const val CH_UPCOMING = "upcoming"
         const val CH_SENT = "sent"
+        const val KIND_MISSED = 0
         const val KIND_TODAY = 1
         const val KIND_UPCOMING = 2
         const val KIND_SMS = 3

@@ -112,13 +112,18 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
         val saved = dao.getAll().associateByTo(mutableMapOf()) { it.identity() }
         var added = 0
         var updated = 0
+        val wantSms = mutableListOf<Person>()
         // No catch-up run here: restoring a backup on a new phone shouldn't text someone already greeted today.
         for (person in parsed.people) {
             val existing = saved[person.identity()]
-            val merged = existing?.fillFrom(person) ?: person
+            var merged = existing?.fillFrom(person) ?: person
+            // A file can't switch on automatic texts by itself: they stay reminders until confirmed.
+            val armsSms = merged.channel == Channel.SMS && existing?.channel != Channel.SMS
+            if (armsSms) merged = merged.copy(channel = Channel.NONE)
             if (merged == existing) continue
             val id = dao.upsert(merged).takeIf { it > 0 } ?: merged.id
             saved[person.identity()] = merged.copy(id = id)
+            if (armsSms) wantSms += merged.copy(id = id)
             if (existing == null) added++ else updated++
         }
         ImportResult(
@@ -126,10 +131,23 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
             updated = updated,
             duplicates = parsed.people.size - added - updated,
             invalid = parsed.skipped,
+            wantSms = wantSms,
         )
     }
 
-    data class ImportResult(val added: Int, val updated: Int, val duplicates: Int, val invalid: Int)
+    /** [wantSms]: people the file set to be texted automatically, saved as reminders until confirmed. */
+    data class ImportResult(
+        val added: Int,
+        val updated: Int,
+        val duplicates: Int,
+        val invalid: Int,
+        val wantSms: List<Person> = emptyList(),
+    )
+
+    /** Turns automatic SMS on for [people] (after the user confirmed an import's request). */
+    suspend fun enableSms(people: List<Person>) = withContext(Dispatchers.IO) {
+        people.forEach { p -> dao.get(p.id)?.let { dao.upsert(it.copy(channel = Channel.SMS)) } }
+    }
 
     /** Keeps everything already set here, taking only what's missing from [backup]. */
     private fun Person.fillFrom(backup: Person) = copy(

@@ -312,4 +312,18 @@
     <string name="mode_system">Sistema</string>
     <string name="mode_light">Claro</string>
     <string name="mode_dark">Oscuro</string>
+    <string name="notif_missed_title">Te perdiste el cumpleaños de %1$s</string>
+    <string name="notif_missed_text">Fue el %1$s y Wishday no pudo recordártelo ni enviar nada. Aún estás a tiempo de felicitar.</string>
+    <string name="sms_error_partial">Solo llegó parte del mensaje, así que no se volvió a enviar automáticamente</string>
+    <string name="send_texts_from">Enviar SMS desde</string>
+    <string name="sim_default">SIM predeterminada del teléfono</string>
+    <string name="sim_slot">SIM %1$d</string>
+    <string name="sim_permission_needed">Wishday necesita el permiso de teléfono para ver tus SIM</string>
+    <plurals name="import_sms_title">
+        <item quantity="one">¿Enviar SMS automático a %d persona?</item>
+        <item quantity="other">¿Enviar SMS automático a %d personas?</item>
+    </plurals>
+    <string name="import_sms_text">El archivo indica que %1$s reciban un SMS automático en su cumpleaños. Por ahora se guardaron solo como recordatorios.</string>
+    <string name="import_sms_turn_on">Activar SMS</string>
+    <string name="import_sms_keep_reminders">Dejar como recordatorios</string>
 </resources>

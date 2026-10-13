@@ -76,4 +76,37 @@ class BirthdaysTest {
         assertNull(parseContactDate("1990-13-01"))
         assertNull(parseContactDate(null))
     }
+
+    @Test
+    fun missedFindsBirthdaysOnDaysWithoutARun() {
+        val today = LocalDate.of(2026, 10, 13)
+        val people = listOf(
+            Person(id = 1, name = "Yesterday", month = 10, day = 12),
+            Person(id = 2, name = "Greeted", month = 10, day = 11, lastGreetedYear = 2026),
+            Person(id = 3, name = "Today", month = 10, day = 13),
+            Person(id = 4, name = "Before last run", month = 10, day = 9),
+        )
+        val lastRun = LocalDate.of(2026, 10, 9).toEpochDay()
+        assertEquals(listOf(1L to LocalDate.of(2026, 10, 12)), Birthdays.missed(people, lastRun, today).map { it.first.id to it.second })
+    }
+
+    @Test
+    fun missedIsEmptyOnFirstRunOrAfterYesterdaysRun() {
+        val today = LocalDate.of(2026, 10, 13)
+        val people = listOf(Person(name = "A", month = 10, day = 12))
+        assertEquals(emptyList<Any>(), Birthdays.missed(people, -1, today))
+        assertEquals(emptyList<Any>(), Birthdays.missed(people, today.minusDays(1).toEpochDay(), today))
+    }
+
+    @Test
+    fun missedHandlesNewYearLeapDaysAndTheLookBackLimit() {
+        val nye = Person(id = 1, name = "NYE", month = 12, day = 31, lastGreetedYear = 2025)
+        val leap = Person(id = 2, name = "Leap", month = 2, day = 29)
+        // Dec 31 2026 was missed; greeted in 2025 doesn't count for 2026.
+        assertEquals(listOf(LocalDate.of(2026, 12, 31)), Birthdays.missed(listOf(nye), LocalDate.of(2026, 12, 30).toEpochDay(), LocalDate.of(2027, 1, 1)).map { it.second })
+        // Feb 29 is celebrated on Feb 28 in 2027.
+        assertEquals(listOf(LocalDate.of(2027, 2, 28)), Birthdays.missed(listOf(leap), LocalDate.of(2027, 2, 27).toEpochDay(), LocalDate.of(2027, 3, 1)).map { it.second })
+        // A phone off since January only looks back 31 days.
+        assertEquals(emptyList<Any>(), Birthdays.missed(listOf(nye), LocalDate.of(2026, 1, 1).toEpochDay(), LocalDate.of(2027, 3, 1)))
+    }
 }

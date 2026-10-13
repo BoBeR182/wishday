@@ -47,6 +47,11 @@ class Settings(context: Context) {
         get() = prefs.getLong(KEY_LAST_RUN, -1)
         set(value) = prefs.edit { putLong(KEY_LAST_RUN, value) }
 
+    /** The SIM to text from (a subscription ID), or -1 for the phone's default SMS SIM. */
+    var smsSubscriptionId: Int
+        get() = prefs.getInt(KEY_SMS_SIM, -1)
+        set(value) = prefs.edit { putInt(KEY_SMS_SIM, value) }
+
     companion object {
         /** Older versions saved the English default itself; treat it as "not customised". */
         private const val LEGACY_DEFAULT_MESSAGE = "Happy birthday, {name}! 🎉 Hope you have a great day."
@@ -55,6 +60,7 @@ class Settings(context: Context) {
         private const val KEY_MINUTE = "send_minute"
         private const val KEY_DAYS_BEFORE = "remind_days_before"
         private const val KEY_LAST_RUN = "last_run_epoch_day"
+        private const val KEY_SMS_SIM = "sms_subscription_id"
         private const val KEY_THEME = "theme"
         private const val KEY_DARK_MODE = "dark_mode"
     }

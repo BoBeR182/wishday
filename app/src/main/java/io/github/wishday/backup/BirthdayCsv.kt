@@ -9,12 +9,14 @@ import io.github.wishday.data.Person
  * edited in a spreadsheet, or brought in from another app.
  *
  * Columns: name, birthday (`2001-10-12`, or `--10-12` without a year), phone, channel, message,
- * important (`yes`/blank), gift_reminder_days, notes.
- * Only name and birthday are required on import; columns are matched by header, in any order.
+ * important (`yes`/blank), gift_reminder_days, notes, last_greeted_year (so a restore doesn't
+ * greet anyone twice in one year). Only name and birthday are required on import; columns are
+ * matched by header, in any order. Cells a spreadsheet would run as a formula are written with a
+ * leading `'`, which import removes again.
  */
 object BirthdayCsv {
 
-    private val HEADER = listOf("name", "birthday", "phone", "channel", "message", "important", "gift_reminder_days", "notes")
+    private val HEADER = listOf("name", "birthday", "phone", "channel", "message", "important", "gift_reminder_days", "notes", "last_greeted_year")
 
     private val NAME_HEADERS = setOf("name", "full name", "fullname", "display name")
     private val DATE_HEADERS = setOf("birthday", "birthdate", "date", "date of birth", "dob")
@@ -34,6 +36,7 @@ object BirthdayCsv {
                     if (p.favorite) "yes" else "",
                     p.giftReminderDays?.toString().orEmpty(),
                     p.notes.orEmpty(),
+                    p.lastGreetedYear?.toString().orEmpty(),
                 ),
             )
         }
@@ -54,10 +57,10 @@ object BirthdayCsv {
             Columns(
                 nameCol, dateCol, column(PHONE_HEADERS), column(setOf("channel")), column(setOf("message")),
                 column(setOf("important", "favorite", "starred")), column(setOf("gift_reminder_days")),
-                column(setOf("notes", "note", "gift ideas")),
+                column(setOf("notes", "note", "gift ideas")), column(setOf("last_greeted_year")),
             )
         } else {
-            Columns(0, 1, 2, 3, 4, 5, 6, 7)
+            Columns(0, 1, 2, 3, 4, 5, 6, 7, 8)
         }
 
         val people = mutableListOf<Person>()
@@ -73,10 +76,10 @@ object BirthdayCsv {
 
     private class Columns(
         val name: Int, val date: Int, val phone: Int, val channel: Int, val message: Int,
-        val important: Int, val giftDays: Int, val notes: Int,
+        val important: Int, val giftDays: Int, val notes: Int, val lastGreeted: Int,
     ) {
         fun toPerson(row: List<String>): Person? {
-            fun cell(i: Int) = row.getOrNull(i)?.trim().orEmpty()
+            fun cell(i: Int) = unescapeFormula(row.getOrNull(i)?.trim().orEmpty())
             val name = cell(name).ifBlank { return null }
             val date = parseContactDate(cell(date)) ?: return null
             val phone = cell(phone).ifBlank { null }
@@ -95,12 +98,21 @@ object BirthdayCsv {
                 favorite = cell(important).lowercase() in setOf("yes", "true", "1", "y", "x"),
                 giftReminderDays = cell(giftDays).toIntOrNull()?.takeIf { it in 1..365 },
                 notes = cell(notes).ifBlank { null },
+                lastGreetedYear = cell(lastGreeted).toIntOrNull()?.takeIf { it in 1900..2200 },
             )
         }
     }
 
+    /** Cells a spreadsheet would treat as a formula ("=", "+", "-", "@"). */
+    private fun looksLikeFormula(cell: String) = cell.firstOrNull()?.let { it in FORMULA_STARTS } == true
+    private const val FORMULA_STARTS = "=+-@"
+
+    private fun escapeFormula(cell: String) = if (looksLikeFormula(cell)) "'$cell" else cell
+    private fun unescapeFormula(cell: String) =
+        if (cell.startsWith('\'') && looksLikeFormula(cell.drop(1))) cell.drop(1) else cell
+
     private fun StringBuilder.appendRow(cells: List<String>) {
-        cells.joinTo(this, ",") { cell ->
+        cells.map(::escapeFormula).joinTo(this, ",") { cell ->
             if (cell.any { it == ',' || it == '"' || it == '\n' || it == '\r' }) {
                 "\"" + cell.replace("\"", "\"\"") + "\""
             } else {

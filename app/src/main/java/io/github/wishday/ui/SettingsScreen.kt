@@ -31,6 +31,7 @@ import android.content.Intent
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import io.github.wishday.R
+import io.github.wishday.data.Person
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -144,6 +145,8 @@ fun SettingsScreen(vm: WishdayViewModel, onDone: () -> Unit, onAbout: () -> Unit
                     }
                 },
             )
+
+            SmsSimSetting(vm)
 
             if (Build.VERSION.SDK_INT >= 33) {
                 val context = LocalContext.current
@@ -265,11 +268,14 @@ private fun Backup(vm: WishdayViewModel) {
                 .onFailure { toast(context.getString(R.string.export_failed, it.message.orEmpty())) }
         }
     }
+    var confirmSms by remember { mutableStateOf<List<Person>>(emptyList()) }
+    val sms = rememberSmsPermission()
     val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             runCatching { vm.importFile(uri) }
                 .onSuccess { r ->
+                    confirmSms = r.wantSms
                     toast(
                         buildList {
                             add(context.getString(R.string.imported_count, r.added))
@@ -281,6 +287,32 @@ private fun Backup(vm: WishdayViewModel) {
                 }
                 .onFailure { toast(context.getString(R.string.import_failed, it.message.orEmpty())) }
         }
+    }
+
+    if (confirmSms.isNotEmpty()) {
+        val names = confirmSms.map { it.name }
+        AlertDialog(
+            onDismissRequest = { confirmSms = emptyList() },
+            title = { Text(pluralStringResource(R.plurals.import_sms_title, names.size, names.size)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.import_sms_text,
+                        names.take(5).joinToString(", ") + if (names.size > 5) ", …" else "",
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val chosen = confirmSms
+                    confirmSms = emptyList()
+                    sms.request { granted -> if (granted) scope.launch { vm.enableSms(chosen) } }
+                }) { Text(stringResource(R.string.import_sms_turn_on)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmSms = emptyList() }) { Text(stringResource(R.string.import_sms_keep_reminders)) }
+            },
+        )
     }
 
     Text(stringResource(R.string.backup), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(horizontal = 16.dp))

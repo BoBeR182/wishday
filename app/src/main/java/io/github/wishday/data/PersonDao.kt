@@ -26,8 +26,15 @@ interface PersonDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertIgnoringExisting(people: List<Person>): List<Long>
 
-    @Query("UPDATE people SET lastGreetedYear = :year WHERE id = :id")
-    suspend fun markGreeted(id: Long, year: Int)
+    /**
+     * Claims this year's greeting. Returns 1 if this call claimed it and 0 if it was already
+     * claimed, so two overlapping runs (daily check and catch-up) can't both send.
+     */
+    @Query(
+        "UPDATE people SET lastGreetedYear = :year " +
+            "WHERE id = :id AND (lastGreetedYear IS NULL OR lastGreetedYear != :year)",
+    )
+    suspend fun markGreeted(id: Long, year: Int): Int
 
     @Delete
     suspend fun delete(person: Person)

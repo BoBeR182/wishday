@@ -4,6 +4,7 @@ import io.github.wishday.backup.BirthdayCsv
 import io.github.wishday.data.Channel
 import io.github.wishday.data.Person
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BirthdayCsvTest {
@@ -28,7 +29,27 @@ class BirthdayCsvTest {
     @Test
     fun yearlessBirthdaysAreWrittenWithDashes() {
         val csv = BirthdayCsv.write(listOf(Person(name = "Ada", month = 3, day = 7)))
-        assertEquals("name,birthday,phone,channel,message,important,gift_reminder_days,notes\r\nAda,--03-07,,none,,,,\r\n", csv)
+        // "--03-07" would be read by spreadsheets as a formula, so it gets a leading apostrophe.
+        assertEquals(
+            "name,birthday,phone,channel,message,important,gift_reminder_days,notes,last_greeted_year\r\nAda,'--03-07,,none,,,,,\r\n",
+            csv,
+        )
+        assertEquals(Person(name = "Ada", month = 3, day = 7), BirthdayCsv.read(csv).people.single())
+    }
+
+    @Test
+    fun formulaLikeCellsAreEscapedAndRestored() {
+        val person = Person(name = "=HYPERLINK(\"x\")", phone = "+15555550123", month = 1, day = 2, notes = "@home -ish")
+        val csv = BirthdayCsv.write(listOf(person))
+        assertTrue(csv.lines()[1].startsWith("\"'=HYPERLINK"))
+        assertTrue("'+15555550123" in csv && "'@home -ish" in csv)
+        assertEquals(person, BirthdayCsv.read(csv).people.single())
+    }
+
+    @Test
+    fun lastGreetedYearSurvivesARoundTrip() {
+        val person = Person(name = "Grace", month = 12, day = 9, lastGreetedYear = 2026)
+        assertEquals(2026, BirthdayCsv.read(BirthdayCsv.write(listOf(person))).people.single().lastGreetedYear)
     }
 
     @Test

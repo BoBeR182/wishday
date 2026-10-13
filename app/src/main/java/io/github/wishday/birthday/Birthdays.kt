@@ -34,6 +34,19 @@ object Birthdays {
     fun ageTurning(person: Person, today: LocalDate): Int? =
         person.year?.let { next(person, today).year - it }
 
+    /**
+     * Birthdays that fell after the run on [lastRunEpochDay] and before [today], with nothing sent:
+     * the days the daily check never ran. Looks back at most [maxDays]; nothing before the first run.
+     */
+    fun missed(people: List<Person>, lastRunEpochDay: Long, today: LocalDate, maxDays: Long = 31): List<Pair<Person, LocalDate>> {
+        if (lastRunEpochDay < 0) return emptyList()
+        val first = maxOf(lastRunEpochDay + 1, today.toEpochDay() - maxDays)
+        return (first until today.toEpochDay()).flatMap { epochDay ->
+            val day = LocalDate.ofEpochDay(epochDay)
+            people.filter { isToday(it, day) && it.lastGreetedYear != day.year }.map { it to day }
+        }
+    }
+
     /** People sorted by how soon their birthday is. */
     fun upcoming(people: List<Person>, today: LocalDate): List<Person> =
         people.sortedWith(compareBy({ daysUntil(it, today) }, { !it.favorite }, { it.name.lowercase() }))

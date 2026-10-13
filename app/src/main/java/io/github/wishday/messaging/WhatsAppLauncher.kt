@@ -21,16 +21,21 @@ object WhatsAppLauncher {
 
     fun isInstalled(context: Context): Boolean = installed(context) != null
 
-    /** Opens the chat with [phone] with [text] typed in, or WhatsApp's share sheet when there's no number. */
+    /**
+     * Opens the chat with [phone] with [text] typed in, or WhatsApp's share sheet when there's no
+     * number. Without WhatsApp installed it's Android's share sheet instead: never the web page.
+     */
     fun intentFor(context: Context, phone: String?, text: String): Intent {
+        val share = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
         val pkg = installed(context)
+            ?: return Intent.createChooser(share, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         val number = phone?.let { internationalDigits(context, it) }
         val intent = if (number != null) {
             Intent(Intent.ACTION_VIEW, "https://api.whatsapp.com/send?phone=$number&text=${Uri.encode(text)}".toUri())
         } else {
-            Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+            share
         }
-        return intent.apply { if (pkg != null) setPackage(pkg) }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        return intent.setPackage(pkg).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 
     /**

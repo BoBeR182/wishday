@@ -1,0 +1,8 @@
+• Your data is left out of Android cloud backups and phone transfers
+• Never texts anyone twice
+• Tells you when a birthday passed while the phone was off
+• Pick which SIM sends texts on dual-SIM phones
+• Partly sent long messages aren't resent automatically
+• Importing a file asks before turning on automatic texts
+• CSV backups remember who was greeted and are safe to open in spreadsheets
+• Without WhatsApp, its option opens the share menu instead of a website

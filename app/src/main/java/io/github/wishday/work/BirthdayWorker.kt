@@ -30,13 +30,16 @@ class BirthdayWorker(context: Context, params: WorkerParameters) : CoroutineWork
         val sms = SmsSender(applicationContext)
         val today = LocalDate.now()
         val firstRunToday = settings.lastRunEpochDay != today.toEpochDay()
+        val people = dao.getAll()
 
-        for (person in dao.getAll()) {
+        // Days with no run at all (phone off, or the run slipped past midnight) must not pass silently.
+        Birthdays.missed(people, settings.lastRunEpochDay, today).forEach { (person, day) -> notifications.missedBirthday(person, day) }
+        for (person in people) {
             val days = Birthdays.daysUntil(person, today)
             when {
+                // Claim first: only the run that marks them greeted gets to send.
                 days == 0L && person.lastGreetedYear != today.year -> {
-                    greet(person, settings, sms, notifications, today)
-                    dao.markGreeted(person.id, today.year)
+                    if (dao.markGreeted(person.id, today.year) == 1) greet(person, settings, sms, notifications, today)
                 }
                 // The early gift reminder comes first, so a person with both gets the gift note.
                 firstRunToday && person.giftReminderDays != null && days == person.giftReminderDays.toLong() ->

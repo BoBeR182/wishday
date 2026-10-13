@@ -313,4 +313,18 @@
     <string name="mode_system">System</string>
     <string name="mode_light">Light</string>
     <string name="mode_dark">Dark</string>
+    <string name="notif_missed_title">You missed %1$s\'s birthday</string>
+    <string name="notif_missed_text">It was on %1$s, and Wishday couldn\'t remind you or send anything. It\'s not too late for a wish.</string>
+    <string name="sms_error_partial">Only part of the message got through, so it wasn\'t sent again automatically</string>
+    <string name="send_texts_from">Send texts from</string>
+    <string name="sim_default">Phone\'s default SIM</string>
+    <string name="sim_slot">SIM %1$d</string>
+    <string name="sim_permission_needed">Wishday needs phone permission to list your SIMs</string>
+    <plurals name="import_sms_title">
+        <item quantity="one">Text %d person automatically?</item>
+        <item quantity="other">Text %d people automatically?</item>
+    </plurals>
+    <string name="import_sms_text">The file sets %1$s to get an automatic SMS on their birthday. For now they\'re saved as reminders only.</string>
+    <string name="import_sms_turn_on">Turn on texts</string>
+    <string name="import_sms_keep_reminders">Keep as reminders</string>
 </resources>
