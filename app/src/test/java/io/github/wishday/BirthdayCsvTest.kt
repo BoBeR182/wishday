@@ -29,9 +29,9 @@ class BirthdayCsvTest {
     @Test
     fun yearlessBirthdaysAreWrittenWithDashes() {
         val csv = BirthdayCsv.write(listOf(Person(name = "Ada", month = 3, day = 7)))
-        // "--03-07" would be read by spreadsheets as a formula, so it gets a leading apostrophe.
+        // Only digits and dashes, so no apostrophe: spreadsheets and contact apps see the date as is.
         assertEquals(
-            "name,birthday,phone,channel,message,important,gift_reminder_days,notes,last_greeted_year\r\nAda,'--03-07,,none,,,,,\r\n",
+            "name,birthday,phone,channel,message,important,gift_reminder_days,notes,last_greeted_year\r\nAda,--03-07,,none,,,,,\r\n",
             csv,
         )
         assertEquals(Person(name = "Ada", month = 3, day = 7), BirthdayCsv.read(csv).people.single())
@@ -42,8 +42,23 @@ class BirthdayCsvTest {
         val person = Person(name = "=HYPERLINK(\"x\")", phone = "+15555550123", month = 1, day = 2, notes = "@home -ish")
         val csv = BirthdayCsv.write(listOf(person))
         assertTrue(csv.lines()[1].startsWith("\"'=HYPERLINK"))
-        assertTrue("'+15555550123" in csv && "'@home -ish" in csv)
+        assertTrue("'@home -ish" in csv)
         assertEquals(person, BirthdayCsv.read(csv).people.single())
+    }
+
+    @Test
+    fun phoneNumbersAreNotEscapedButSignedFormulasAre() {
+        val person = Person(name = "-2+3+cmd|' /C calc'!A0", phone = "+1 (519) 555-0123", month = 1, day = 2)
+        val csv = BirthdayCsv.write(listOf(person))
+        assertTrue(",+1 (519) 555-0123," in csv)
+        assertTrue(csv.lines()[1].startsWith("'-2+3+cmd"))
+        assertEquals(person, BirthdayCsv.read(csv).people.single())
+    }
+
+    @Test
+    fun olderExportsWithEscapedNumbersStillImport() {
+        val person = BirthdayCsv.read("name,birthday,phone\nAda,'--03-07,'+15555550123").people.single()
+        assertEquals(Person(name = "Ada", phone = "+15555550123", month = 3, day = 7), person)
     }
 
     @Test

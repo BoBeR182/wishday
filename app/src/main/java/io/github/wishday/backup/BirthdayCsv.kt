@@ -12,7 +12,7 @@ import io.github.wishday.data.Person
  * important (`yes`/blank), gift_reminder_days, notes, last_greeted_year (so a restore doesn't
  * greet anyone twice in one year). Only name and birthday are required on import; columns are
  * matched by header, in any order. Cells a spreadsheet would run as a formula are written with a
- * leading `'`, which import removes again.
+ * leading `'`, which import removes again; phone numbers and `--10-12` dates are left alone.
  */
 object BirthdayCsv {
 
@@ -107,7 +107,16 @@ object BirthdayCsv {
     private fun looksLikeFormula(cell: String) = cell.firstOrNull()?.let { it in FORMULA_STARTS } == true
     private const val FORMULA_STARTS = "=+-@"
 
-    private fun escapeFormula(cell: String) = if (looksLikeFormula(cell)) "'$cell" else cell
+    /**
+     * Phone numbers (`+1 519-555-0123`) and year-less birthdays (`--10-12`) start with "+" or "-"
+     * but are only digits and punctuation, so they can't run anything and are left as they are.
+     */
+    private val PLAIN_NUMBER = Regex("[+-][0-9 ()./-]*")
+
+    private fun escapeFormula(cell: String) =
+        if (looksLikeFormula(cell) && !PLAIN_NUMBER.matches(cell)) "'$cell" else cell
+
+    // Older exports escaped every "+" and "-" cell, so any formula-like cell is unescaped.
     private fun unescapeFormula(cell: String) =
         if (cell.startsWith('\'') && looksLikeFormula(cell.drop(1))) cell.drop(1) else cell
 

@@ -2,6 +2,7 @@ package io.github.wishday.ui
 
 import androidx.compose.ui.res.stringResource
 import io.github.wishday.R
+import kotlinx.coroutines.launch
 import android.Manifest
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
@@ -56,6 +57,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -84,6 +86,7 @@ fun EditPersonScreen(vm: WishdayViewModel, personId: Long?, onDone: () -> Unit) 
 @Composable
 private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, onDone: () -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var name by rememberSaveable { mutableStateOf(original.name) }
     var phone by rememberSaveable { mutableStateOf(original.phone.orEmpty()) }
     var month by rememberSaveable { mutableStateOf(original.month) }
@@ -345,16 +348,18 @@ private fun PersonForm(vm: WishdayViewModel, original: Person, isNew: Boolean, o
             confirmButton = {
                 TextButton(onClick = {
                     confirmSms = false
-                    vm.save(current())
-                    val result = vm.sendSmsNow(current())
-                    Toast.makeText(
-                        context,
-                        result.fold(
-                            { context.getString(R.string.sending) },
-                            { context.getString(R.string.couldnt_send, it.message.orEmpty()) },
-                        ),
-                        Toast.LENGTH_SHORT,
-                    ).show()
+                    val person = current()
+                    scope.launch {
+                        val result = vm.saveAndSendSmsNow(person)
+                        Toast.makeText(
+                            context,
+                            result.fold(
+                                { context.getString(R.string.sending) },
+                                { context.getString(R.string.couldnt_send, it.message.orEmpty()) },
+                            ),
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
                 }) { Text(stringResource(R.string.send)) }
             },
             dismissButton = { TextButton(onClick = { confirmSms = false }) { Text(stringResource(R.string.cancel)) } },

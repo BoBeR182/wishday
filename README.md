@@ -38,6 +38,10 @@ If you want fully automatic Signal sending, the usual route is [signal-cli](http
 
 Automatic SMS needs the `SEND_SMS` permission. Google Play only allows that permission for apps set as the device's default SMS app. Wishday is meant for [F-Droid](https://f-droid.org) and GitHub releases, where that restriction doesn't apply. Store metadata is in `fastlane/metadata/android`.
 
+## Why it lists "read phone status and identity"
+
+That's `READ_PHONE_STATE`, which Android requires to list the SIM cards in a dual-SIM phone. Wishday asks for it only when you open the SIM picker in Settings, and uses it only to show which SIM sends your texts. It never reads your phone number, IMEI or call state. If you don't pick a SIM, it's never requested, and texts go out on the phone's default SIM for SMS.
+
 ## How it works
 
 | Piece | File |

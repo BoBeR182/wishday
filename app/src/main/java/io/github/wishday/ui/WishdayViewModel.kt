@@ -97,8 +97,9 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
 
     /**
      * Adds people from a CSV file or a Birday backup (detected from the file's contents). Anyone
-     * already saved with the same name and birthday (e.g. just imported from contacts) gets the
-     * backup's settings filled into whatever they're missing, rather than being skipped.
+     * already saved with the same name and birthday (e.g. just imported from contacts), or the only
+     * one with that name, gets the backup's settings filled into whatever they're missing, rather
+     * than being skipped; their birthday here is kept.
      */
     suspend fun importFile(uri: Uri): ImportResult = withContext(Dispatchers.IO) {
         val app = getApplication<Application>()
@@ -109,20 +110,27 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
         } else {
             BirthdayCsv.read(bytes.toString(Charsets.UTF_8))
         }
-        val saved = dao.getAll().associateByTo(mutableMapOf()) { it.identity() }
+        val all = dao.getAll()
+        val saved = all.associateByTo(mutableMapOf()) { it.identity() }
+        // A birthday changed here after the export would otherwise come back as a second person,
+        // so a name that's unique both here and in the file matches even when the dates differ.
+        val onlyOneHere = all.groupBy { it.nameKey() }.filterValues { it.size == 1 }.mapValues { it.value.single() }
+        val countInFile = parsed.people.groupingBy { it.nameKey() }.eachCount()
         var added = 0
         var updated = 0
         val wantSms = mutableListOf<Person>()
         // No catch-up run here: restoring a backup on a new phone shouldn't text someone already greeted today.
         for (person in parsed.people) {
             val existing = saved[person.identity()]
+                ?: onlyOneHere[person.nameKey()]?.takeIf { countInFile[person.nameKey()] == 1 }
+                    ?.let { saved[it.identity()] }
             var merged = existing?.fillFrom(person) ?: person
             // A file can't switch on automatic texts by itself: they stay reminders until confirmed.
             val armsSms = merged.channel == Channel.SMS && existing?.channel != Channel.SMS
             if (armsSms) merged = merged.copy(channel = Channel.NONE)
             if (merged == existing) continue
             val id = dao.upsert(merged).takeIf { it > 0 } ?: merged.id
-            saved[person.identity()] = merged.copy(id = id)
+            saved[merged.identity()] = merged.copy(id = id)
             if (armsSms) wantSms += merged.copy(id = id)
             if (existing == null) added++ else updated++
         }
@@ -162,7 +170,8 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
         notes = notes ?: backup.notes,
     )
 
-    private fun Person.identity() = Triple(name.trim().lowercase(), month, day)
+    private fun Person.nameKey() = name.trim().lowercase()
+    private fun Person.identity() = Triple(nameKey(), month, day)
 
     /** Every contact with a phone number, for the contact picker. Requires READ_CONTACTS. */
     suspend fun loadPhoneContacts(): List<PhoneContact> = withContext(Dispatchers.IO) {
@@ -254,10 +263,17 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
     fun messageFor(person: Person): String =
         Birthdays.render(person.customMessage ?: settings.defaultMessage, person, LocalDate.now())
 
-    /** Queues the SMS; whether it went out is reported by notification. */
-    fun sendSmsNow(person: Person): Result<Unit> =
-        SmsSender(getApplication()).send(person, messageFor(person))
-            .onSuccess { markGreetedIfToday(person) }
+    /**
+     * Saves [person] and queues the SMS; whether it went out is reported by notification.
+     * On their birthday the save also claims today's greeting, before anything is sent, so
+     * neither the daily run nor the catch-up a save can start will text them as well.
+     */
+    suspend fun saveAndSendSmsNow(person: Person): Result<Unit> {
+        val today = LocalDate.now()
+        val claimed = if (Birthdays.isToday(person, today)) person.copy(lastGreetedYear = today.year) else person
+        val id = saveNow(claimed)
+        return SmsSender(getApplication()).send(claimed.copy(id = id), messageFor(claimed))
+    }
 
     /**
      * For the home screen's quick buttons: [intent] is built from today's message, and opening
