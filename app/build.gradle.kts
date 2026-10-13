@@ -61,6 +61,10 @@ android {
         includeInApk = false
         includeInBundle = false
     }
+    lint {
+        // Known findings are recorded here so CI fails only on new ones.
+        baseline = file("lint-baseline.xml")
+    }
     androidResources {
         // Lists the app's languages (English, Spanish) for Android's per-app language setting.
         generateLocaleConfig = true

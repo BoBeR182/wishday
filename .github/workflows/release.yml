@@ -1,0 +1,94 @@
+name: Release
+
+# Pushing a tag like v1.4 builds the signed APK and publishes the GitHub release.
+# Run it by hand to publish a tag that was pushed before this workflow existed.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to release, e.g. v1.3.1
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+  # Every release must be signed with this certificate, or updates break.
+  CERT_SHA256: ab34874e5ba4d0156811aa886eee4c81cff46f92556206ae8fb0611810469a40
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: refs/tags/${{ env.TAG }}
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Read version
+        run: |
+          name=$(sed -nE 's/^ *versionName = "(.*)"/\1/p' app/build.gradle.kts)
+          code=$(sed -nE 's/^ *versionCode = ([0-9]+)/\1/p' app/build.gradle.kts)
+          if [ "v$name" != "$TAG" ]; then
+            echo "::error::Tag $TAG does not match versionName $name"; exit 1
+          fi
+          changelog="fastlane/metadata/android/en-US/changelogs/$code.txt"
+          if [ ! -f "$changelog" ]; then
+            echo "::error::Missing $changelog"; exit 1
+          fi
+          echo "VERSION=$name" >> "$GITHUB_ENV"
+          echo "CHANGELOG=$changelog" >> "$GITHUB_ENV"
+
+      - name: Set up signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          cat > "$RUNNER_TEMP/signing.properties" <<EOF
+          storeFile=$RUNNER_TEMP/release.jks
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+
+      - name: Test and build
+        run: ./gradlew testReleaseUnitTest assembleRelease -Pwishday.signing="$RUNNER_TEMP/signing.properties"
+
+      - name: Verify signature
+        run: |
+          apk=app/build/outputs/apk/release/app-release.apk
+          apksigner=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner
+          actual=$("$apksigner" verify --print-certs "$apk" | sed -nE 's/^Signer #1 certificate SHA-256 digest: //p')
+          if [ "$actual" != "$CERT_SHA256" ]; then
+            echo "::error::APK is signed with $actual, expected $CERT_SHA256"; exit 1
+          fi
+          cp "$apk" "wishday-$VERSION.apk"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          fingerprint=$(echo "$CERT_SHA256" | sed -E 's/(..)/\1:/g; s/:$//')
+          {
+            echo "## What's new"
+            echo
+            sed -E 's/^• /- /' "$CHANGELOG"
+            echo
+            echo "Signing certificate SHA-256: \`$fingerprint\`"
+          } > notes.md
+          gh release create "$TAG" --verify-tag --title "Wishday $VERSION" \
+            --notes-file notes.md "wishday-$VERSION.apk"
+
+      - name: Remove signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks" "$RUNNER_TEMP/signing.properties"
