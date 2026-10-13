@@ -1,0 +1,5 @@
+• Search everyone by name or number, and sort by name or date
+• Asks for SMS permission when you choose SMS, and links to Settings if Android stops asking
+• Saving birthdays to contacts matches by phone number too, and can link or create contacts
+• Restoring a CSV backup fills in settings for people already in the app
+• Fixed a crash at launch in some release builds

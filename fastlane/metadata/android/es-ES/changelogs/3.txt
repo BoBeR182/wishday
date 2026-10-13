@@ -1,0 +1,1 @@
+• Nuevo ID de la app (net.stuckless.wishday), lista para F-Droid. Si instalaste la 1.0 o 1.1 desde GitHub, exporta primero una copia en CSV, instala esta versión e impórtala.
