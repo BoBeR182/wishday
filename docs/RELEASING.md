@@ -67,13 +67,14 @@ tools/set-release-secrets.sh
 
 ## F-Droid
 
-The app isn't on F-Droid yet. To submit it, add `metadata/net.stuckless.wishday.yml` to [fdroiddata](https://gitlab.com/fdroid/fdroiddata):
+Submitted for inclusion in [fdroiddata !52412](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/52412), from the `net.stuckless.wishday` branch of the fork cloned at `~/git/fdroiddata`. The submitted `metadata/net.stuckless.wishday.yml`:
 
 ```yaml
 Categories:
   - Calendar & Agenda
   - Phone & SMS
 License: GPL-3.0-or-later
+AuthorName: cybersecurityhandle
 SourceCode: https://github.com/cybersecurityhandle/wishday
 IssueTracker: https://github.com/cybersecurityhandle/wishday/issues
 Changelog: https://github.com/cybersecurityhandle/wishday/releases
@@ -97,11 +98,9 @@ CurrentVersion: 1.3.1
 CurrentVersionCode: 5
 ```
 
-Steps:
+To change the file while the MR is in review, edit it in `~/git/fdroiddata`, commit and `git push`. The MR updates by itself. Pipelines on the fork don't run because the GitLab account isn't identity-verified; the MR asks a maintainer to run CI instead.
 
-1. Fork `gitlab.com/fdroid/fdroiddata` and clone your fork.
-2. Create a branch named `net.stuckless.wishday` and add the file above.
-3. Commit with the message `New App: net.stuckless.wishday`, push, and open a merge request using the **App inclusion** template.
+Once the MR is merged, `~/git/fdroiddata` isn't needed. Later changes to the metadata, such as AuthorName, go in a new MR.
 
 Notes:
 
