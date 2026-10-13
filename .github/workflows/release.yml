@@ -62,7 +62,7 @@ jobs:
           EOF
 
       - name: Test and build
-        run: ./gradlew testReleaseUnitTest assembleRelease -Pwishday.signing="$RUNNER_TEMP/signing.properties"
+        run: ./gradlew testDebugUnitTest assembleRelease -Pwishday.signing="$RUNNER_TEMP/signing.properties"
 
       - name: Verify signature
         run: |
