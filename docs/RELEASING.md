@@ -87,7 +87,7 @@ Repo: https://github.com/cybersecurityhandle/wishday.git
 Builds:
   - versionName: 1.3.1
     versionCode: 5
-    commit: 0901169ced745f77c1143c96400f1e30fbd2d071
+    commit: eb65885dc6137da9baf3858cc48ffa951a9f63b0
     subdir: app
     gradle:
       - yes
