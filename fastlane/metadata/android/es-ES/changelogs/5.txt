@@ -1,0 +1,3 @@
+• Importar una copia tras cambiar un cumpleaños ya no duplica a la persona
+• Los números y fechas de las copias CSV se abren bien en hojas de cálculo y contactos
+• Enviar ahora ya no va seguido de otro SMS automático el mismo día

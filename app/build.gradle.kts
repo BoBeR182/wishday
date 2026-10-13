@@ -16,8 +16,8 @@ android {
         applicationId = "net.stuckless.wishday"
         minSdk = 26
         targetSdk = 37
-        versionCode = 4
-        versionName = "1.3"
+        versionCode = 5
+        versionName = "1.3.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -55,6 +55,11 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+    dependenciesInfo {
+        // An encrypted blob only Google Play can read; F-Droid's scanner rejects it.
+        includeInApk = false
+        includeInBundle = false
     }
     androidResources {
         // Lists the app's languages (English, Spanish) for Android's per-app language setting.

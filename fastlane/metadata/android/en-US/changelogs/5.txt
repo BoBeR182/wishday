@@ -1,0 +1,3 @@
+• Importing a backup after changing someone's birthday no longer adds them twice
+• Phone numbers and dates in CSV exports open cleanly in spreadsheets and contact apps
+• Send now can't be followed by a second automatic text the same day
