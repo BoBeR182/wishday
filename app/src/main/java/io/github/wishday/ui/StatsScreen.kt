@@ -325,8 +325,3 @@ private fun PersonLine(person: Person, label: String, detail: String, onOpen: (L
     }
 }
 
-@Composable
-private fun shortDate(person: Person): String {
-    val locale = LocalConfiguration.current.locales[0]
-    return stringResource(R.string.short_date, Month.of(person.month).getDisplayName(TextStyle.SHORT, locale), person.day)
-}

@@ -41,8 +41,6 @@
     <string name="default_message">¡Feliz cumpleaños, {name}! 🎉 Que tengas un día genial.</string>
 
     <!-- Home -->
-    <string name="home_date_pattern">EEEE, d \'de\' MMMM</string>
-    <string name="short_date">%2$d %1$s</string>
     <string name="contacts_none_new">No se encontraron cumpleaños nuevos en los contactos</string>
     <plurals name="contacts_imported">
         <item quantity="one">Se importó %d cumpleaños</item>

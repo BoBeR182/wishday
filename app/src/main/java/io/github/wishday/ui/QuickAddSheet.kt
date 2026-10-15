@@ -49,12 +49,13 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 /**
- * Adds someone with just a name and a date. "More options" saves the draft and opens
- * the full editor for a phone number, channel and message.
+ * Adds someone with just a name and a date. "More options" carries the draft over to the
+ * full editor for a phone number, channel and message, without saving it yet: saving a
+ * birthday that's today would greet them with the draft's channel before one was chosen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun QuickAddSheet(vm: WishdayViewModel, onDismiss: () -> Unit, onMoreOptions: (Long?) -> Unit) {
+fun QuickAddSheet(vm: WishdayViewModel, onDismiss: () -> Unit, onMoreOptions: () -> Unit) {
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     val today = remember { LocalDate.now() }
@@ -109,14 +110,8 @@ fun QuickAddSheet(vm: WishdayViewModel, onDismiss: () -> Unit, onMoreOptions: (L
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = {
-                    if (valid) {
-                        scope.launch {
-                            val id = vm.saveNow(draft())
-                            close { onMoreOptions(id) }
-                        }
-                    } else {
-                        close { onMoreOptions(null) }
-                    }
+                    vm.draft = if (valid) draft() else null
+                    close(onMoreOptions)
                 }) { Text(stringResource(R.string.more_options)) }
                 Box(Modifier.weight(1f))
                 GradientButton(stringResource(R.string.add_birthday), enabled = valid, onClick = ::add)

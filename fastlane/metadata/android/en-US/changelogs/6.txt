@@ -1,0 +1,2 @@
+• Someone whose birthday is today, added through "More options", now gets the greeting you choose instead of a plain reminder
+• Dates follow your language's order, e.g. "Mittwoch, 14. Oktober" on a German phone

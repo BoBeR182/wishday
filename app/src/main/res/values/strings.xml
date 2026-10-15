@@ -42,8 +42,6 @@
     <string name="default_message">Happy birthday, {name}! 🎉 Hope you have a great day.</string>
 
     <!-- Home -->
-    <string name="home_date_pattern">EEEE, MMMM d</string>
-    <string name="short_date">%1$s %2$d</string>
     <string name="contacts_none_new">No new birthdays found in contacts</string>
     <plurals name="contacts_imported">
         <item quantity="one">Imported %d birthday</item>

@@ -341,9 +341,9 @@ fun PeopleScreen(
         QuickAddSheet(
             vm,
             onDismiss = { quickAdd = false },
-            onMoreOptions = { id ->
+            onMoreOptions = {
                 quickAdd = false
-                if (id != null) onEdit(id) else onAdd()
+                onAdd()
             },
         )
     }
@@ -418,7 +418,7 @@ private fun Header(
             }
         }
         Text(
-            today.format(java.time.format.DateTimeFormatter.ofPattern(stringResource(R.string.home_date_pattern)))
+            today.format(localDateFormatter("EEEEMMMMd"))
                 .replaceFirstChar { it.titlecase() },
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.85f),
@@ -689,11 +689,6 @@ private fun badges(person: Person) = buildString {
     if (person.giftReminderDays != null) append(" 🎁")
 }
 
-@Composable
-private fun shortDate(person: Person): String {
-    val locale = LocalConfiguration.current.locales[0]
-    return stringResource(R.string.short_date, Month.of(person.month).getDisplayName(TextStyle.SHORT, locale), person.day)
-}
 
 @Composable
 private fun EmptyState(onImport: () -> Unit, onAdd: () -> Unit) {

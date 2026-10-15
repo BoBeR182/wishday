@@ -77,7 +77,9 @@ import java.time.format.TextStyle
 @Composable
 fun EditPersonScreen(vm: WishdayViewModel, personId: Long?, onDone: () -> Unit) {
     val loaded by produceState<Person?>(null, personId) {
-        value = personId?.let { vm.get(it) } ?: Person(name = "", month = 1, day = 1)
+        value = personId?.let { vm.get(it) }
+            ?: vm.draft.also { vm.draft = null }
+            ?: Person(name = "", month = 1, day = 1)
     }
     loaded?.let { PersonForm(vm, it, isNew = personId == null, onDone = onDone) }
 }

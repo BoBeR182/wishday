@@ -61,6 +61,9 @@ class WishdayViewModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun get(id: Long): Person? = dao.get(id)
 
+    /** Quick add's unsaved draft, picked up by the editor when "More options" opens it. */
+    var draft: Person? = null
+
     fun save(person: Person) = viewModelScope.launch { saveNow(person) }
 
     /** Saves [person] and returns their id (new or existing). */
