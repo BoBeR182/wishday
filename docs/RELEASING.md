@@ -85,17 +85,17 @@ RepoType: git
 Repo: https://github.com/cybersecurityhandle/wishday.git
 
 Builds:
-  - versionName: 1.3.1
-    versionCode: 5
-    commit: eb65885dc6137da9baf3858cc48ffa951a9f63b0
+  - versionName: 1.3.2
+    versionCode: 6
+    commit: 91a0edb6165b572dd9599a1a9b7a0afc1218a766
     subdir: app
     gradle:
       - yes
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.3.1
-CurrentVersionCode: 5
+CurrentVersion: 1.3.2
+CurrentVersionCode: 6
 ```
 
 To change the file while the MR is in review, edit it in `~/git/fdroiddata`, commit and `git push`. The MR updates by itself. Pipelines on the fork don't run because the GitLab account isn't identity-verified; the MR asks a maintainer to run CI instead.
